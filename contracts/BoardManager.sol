@@ -2,18 +2,25 @@
 pragma solidity ^0.8.9;
 
 contract BoardManager {
-    uint256 ZERO = uint256(0);
+    uint32 ZERO = uint32(0);
+    uint32[] board;
 
     function start() pure public returns (int) {
         return 0;
     }
 
-    function getCanvas() pure public returns (uint32[] memory) {
+    function getCanvas() view public returns (uint32[] memory) {
         uint32[] memory result = new uint32[](4);
-        result[0] = 0;
-        result[1] = 0;
-        result[2] = 0;
-        result[3] = 0;
+        uint32 last = board.length > 0 ? board[board.length - 1] : ZERO;
+        result[0] = ZERO;
+        result[1] = ZERO;
+        result[2] = ZERO;
+        result[3] = last;
         return result;
+    }
+
+    function draw(uint32 drawing) public returns (uint32) {
+        board.push(drawing);
+        return 0;
     }
 }
