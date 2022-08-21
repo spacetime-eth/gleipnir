@@ -8,12 +8,12 @@ contract BoardManager {
         return 0;
     }
 
-    function getCanvas() public returns (uint256[] memory) {
-        uint256[] memory coso = new uint256[](4);
-        coso[0] = 0;
-        coso[1] = 0;
-        coso[2] = 0;
-        coso[3] = 0;
-        return coso;
+    function getCanvas() pure public returns (uint32[] memory) {
+        uint32[] memory result = new uint32[](4);
+        result[0] = 0;
+        result[1] = 0;
+        result[2] = 0;
+        result[3] = 0;
+        return result;
     }
 }

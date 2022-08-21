@@ -20,7 +20,6 @@ describe("BoardManager", () => {
   it("returns canvas", async () => {
     const { manager } = await loadFixture(deployBoardManager);
     const result = await manager.getCanvas();
-    console.log(result);
-    expect(result).to.equal([0, 0, 0, 0]);
+    expect(result).to.have.same.members([0, 0, 0, 0]);
   });
 });
