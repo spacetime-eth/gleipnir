@@ -5,7 +5,7 @@ contract BoardManager {
     uint32 ZERO = uint32(0);
     uint32[] board;
 
-    function start() pure public returns (int) {
+    function start() pure public returns (uint32) {
         return 0;
     }
 
@@ -21,6 +21,10 @@ contract BoardManager {
 
     function draw(uint32 drawing) public returns (uint32) {
         board.push(drawing);
+        return 0;
+    }
+
+    function finish() public pure returns (uint32) {
         return 0;
     }
 }

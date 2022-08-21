@@ -37,4 +37,14 @@ describe("BoardManager", () => {
     board = await manager.getCanvas();
     expect(board).to.have.same.members([0, 0, 0, 43]);
   });
+
+  it.skip("fails to draw empty canvas", async () => {});
+
+  it("finishes", async () => {
+    const { manager } = await loadFixture(deployBoardManager);
+    await manager.draw(42);
+    await manager.finish();
+  });
+
+  it.skip("fails to finish already finished board", async () => {});
 });
