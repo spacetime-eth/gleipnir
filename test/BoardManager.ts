@@ -61,6 +61,11 @@ describe("BoardManager", () => {
       await manager.finish();
     });
 
-    it.skip("fails to finish already finished board", async () => {});
+    it("fails to finish already finished board", async () => {
+      await manager.finish();
+      await expect(manager.finish()).to.be.revertedWith(
+        "Board must be started in order to be finished"
+      );
+    });
   });
 });

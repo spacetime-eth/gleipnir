@@ -35,7 +35,9 @@ contract BoardManager {
         return 0;
     }
 
-    function finish() public pure returns (uint32) {
+    function finish() public returns (uint32) {
+        require(status == Status.Started, "Board must be started in order to be finished");
+        status = Status.Finished;
         return 0;
     }
 }
