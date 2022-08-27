@@ -18,10 +18,18 @@ describe("BoardManager", () => {
     manager = (await loadFixture(deployBoardManager)).manager;
   });
 
-  it("fails to get canvas when board is not started", async () => {
-    await expect(manager.getCanvas()).to.be.revertedWith(
-      "Board must be started before getting a canvas"
-    );
+  describe("board is idle", () => {
+    it("fails to get canvas", async () => {
+      await expect(manager.getCanvas()).to.be.revertedWith(
+        "Board must be started before getting a canvas"
+      );
+    });
+
+    it("fails to draw", async () => {
+      await expect(manager.draw(42)).to.be.revertedWith(
+        "Board must be started before drawing"
+      );
+    });
   });
 
   describe("board is started", () => {
