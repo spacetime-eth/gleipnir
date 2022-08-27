@@ -17,7 +17,7 @@ describe("BoardManager", () => {
     expect(result).to.equal(0);
   });
 
-  it.skip("fails to start board twice", async () => {});
+  it.skip("fails to start already started board", async () => {});
 
   it("returns canvas", async () => {
     const { manager } = await loadFixture(deployBoardManager);
@@ -38,7 +38,12 @@ describe("BoardManager", () => {
     expect(board).to.have.same.members([0, 0, 0, 43]);
   });
 
-  it.skip("fails to draw empty canvas", async () => {});
+  it("fails to draw empty canvas", async () => {
+    const { manager } = await loadFixture(deployBoardManager);
+    await expect(manager.draw(0)).to.be.revertedWith(
+      "Drawing shouldn't be empty"
+    );
+  });
 
   it("finishes", async () => {
     const { manager } = await loadFixture(deployBoardManager);

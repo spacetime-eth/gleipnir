@@ -20,6 +20,7 @@ contract BoardManager {
     }
 
     function draw(uint32 drawing) public returns (uint32) {
+        require(drawing > 0, "Drawing shouldn't be empty");
         board.push(drawing);
         return 0;
     }
