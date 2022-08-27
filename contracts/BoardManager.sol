@@ -2,10 +2,19 @@
 pragma solidity ^0.8.9;
 
 contract BoardManager {
+    enum Status {
+        Idle,
+        Started,
+        Finished
+    }
+
     uint32 ZERO = uint32(0);
     uint32[] board;
+    Status status = Status.Idle;
 
-    function start() pure public returns (uint32) {
+    function start() public returns (uint32) {
+        require(status == Status.Idle, "Can't start an already started board");
+        status = Status.Started;
         return 0;
     }
 

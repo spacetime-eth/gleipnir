@@ -18,12 +18,12 @@ describe("BoardManager", () => {
     manager = (await loadFixture(deployBoardManager)).manager;
   });
 
-  it("starts board", async () => {
-    const result = await manager.start();
-    expect(result).to.equal(0);
+  it("fails to start already started board", async () => {
+    await manager.start();
+    await expect(manager.start()).to.be.revertedWith(
+      "Can't start an already started board"
+    );
   });
-
-  it.skip("fails to start already started board", async () => {});
 
   it("returns canvas", async () => {
     const result = await manager.getCanvas();
