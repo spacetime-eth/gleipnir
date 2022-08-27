@@ -1,6 +1,7 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { BoardManager } from "../typechain-types";
 
 describe("BoardManager", () => {
   async function deployBoardManager() {
@@ -11,8 +12,13 @@ describe("BoardManager", () => {
     return { manager };
   }
 
+  let manager: BoardManager;
+
+  beforeEach(async () => {
+    manager = (await loadFixture(deployBoardManager)).manager;
+  });
+
   it("starts board", async () => {
-    const { manager } = await loadFixture(deployBoardManager);
     const result = await manager.start();
     expect(result).to.equal(0);
   });
@@ -20,7 +26,6 @@ describe("BoardManager", () => {
   it.skip("fails to start already started board", async () => {});
 
   it("returns canvas", async () => {
-    const { manager } = await loadFixture(deployBoardManager);
     const result = await manager.getCanvas();
     expect(result).to.have.same.members([0, 0, 0, 0]);
   });
@@ -28,7 +33,6 @@ describe("BoardManager", () => {
   it.skip("fails to get canvas when board is not started", async () => {});
 
   it("draws", async () => {
-    const { manager } = await loadFixture(deployBoardManager);
     await manager.draw(42);
     let board = await manager.getCanvas();
     expect(board).to.have.same.members([0, 0, 0, 42]);
@@ -39,14 +43,12 @@ describe("BoardManager", () => {
   });
 
   it("fails to draw empty canvas", async () => {
-    const { manager } = await loadFixture(deployBoardManager);
     await expect(manager.draw(0)).to.be.revertedWith(
       "Drawing shouldn't be empty"
     );
   });
 
   it("finishes", async () => {
-    const { manager } = await loadFixture(deployBoardManager);
     await manager.draw(42);
     await manager.finish();
   });
