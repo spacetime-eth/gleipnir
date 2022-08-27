@@ -19,6 +19,7 @@ contract BoardManager {
     }
 
     function getCanvas() view public returns (uint32[] memory) {
+        require(status == Status.Started, "Board must be started before getting a canvas");
         uint32[] memory result = new uint32[](4);
         uint32 last = board.length > 0 ? board[board.length - 1] : ZERO;
         result[0] = ZERO;
