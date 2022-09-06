@@ -1,5 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
+import {BigNumber} from "ethers"
 import { ethers } from "hardhat";
 import { BoardManager } from "../typechain-types";
 
@@ -15,6 +16,7 @@ describe("BoardManager", () => {
   let manager: BoardManager;
 
   beforeEach(async () => {
+    //@ts-ignore
     manager = (await loadFixture(deployBoardManager)).manager;
   });
 
@@ -26,7 +28,7 @@ describe("BoardManager", () => {
     });
 
     it("fails to draw", async () => {
-      await expect(manager.draw(42)).to.be.revertedWith(
+      await expect(manager.draw(DRAWING_A_REQUEST)).to.be.revertedWith(
         "Board must be started before drawing"
       );
     });
@@ -45,27 +47,27 @@ describe("BoardManager", () => {
 
     it("returns canvas", async () => {
       const result = await manager.getCanvas();
-      expect(result).to.have.same.members([0, 0, 0, 0]);
+      expect(result).to.deep.equal([EMPTY_CANVAS_RESPONSE, EMPTY_CANVAS_RESPONSE, EMPTY_CANVAS_RESPONSE, EMPTY_CANVAS_RESPONSE]);
     });
 
     it("draws", async () => {
-      await manager.draw(42);
+      await manager.draw(DRAWING_A_REQUEST);
       let board = await manager.getCanvas();
-      expect(board).to.have.same.members([0, 0, 0, 42]);
+      expect(board).to.deep.equal([EMPTY_CANVAS_RESPONSE, EMPTY_CANVAS_RESPONSE, EMPTY_CANVAS_RESPONSE, DRAWING_A_RESPONSE]);
 
-      await manager.draw(43);
+      await manager.draw(DRAWING_B_REQUEST);
       board = await manager.getCanvas();
-      expect(board).to.have.same.members([0, 0, 0, 43]);
+      expect(board).to.deep.equal([EMPTY_CANVAS_RESPONSE, EMPTY_CANVAS_RESPONSE, EMPTY_CANVAS_RESPONSE, DRAWING_B_RESPONSE]);
     });
 
     it("fails to draw empty canvas", async () => {
-      await expect(manager.draw(0)).to.be.revertedWith(
+      await expect(manager.draw(EMPTY_CANVAS)).to.be.revertedWith(
         "Drawing shouldn't be empty"
       );
     });
 
     it("finishes", async () => {
-      await manager.draw(42);
+      await manager.draw(DRAWING_A_REQUEST);
       await manager.finish();
     });
 
@@ -77,3 +79,12 @@ describe("BoardManager", () => {
     });
   });
 });
+
+const toBigNumberResponse = (value: number) => BigNumber.from(value)
+
+const EMPTY_CANVAS = Array(16).fill(0n)
+const EMPTY_CANVAS_RESPONSE = EMPTY_CANVAS.map(toBigNumberResponse)
+const DRAWING_A_REQUEST = Array.from(Array(16), (_, i) => i)
+const DRAWING_B_REQUEST = Array.from(Array(16), (_, i) => i + 1)
+const DRAWING_A_RESPONSE = DRAWING_A_REQUEST.map(toBigNumberResponse)
+const DRAWING_B_RESPONSE = DRAWING_B_REQUEST.map(toBigNumberResponse)

@@ -8,8 +8,13 @@ contract BoardManager {
         Finished
     }
 
-    uint32 ZERO = uint32(0);
-    uint32[] board;
+    uint256[16] NO_DRAWING = [
+        0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0x0, 0x0
+    ];
+    uint256[16][] board;
     Status status = Status.Idle;
 
     function start() public returns (uint32) {
@@ -18,27 +23,31 @@ contract BoardManager {
         return 0;
     }
 
-    function getCanvas() view public returns (uint32[] memory) {
+    function getCanvas() view public returns (uint256[16][4] memory) {
         require(status == Status.Started, "Board must be started before getting a canvas");
-        uint32[] memory result = new uint32[](4);
-        uint32 last = board.length > 0 ? board[board.length - 1] : ZERO;
-        result[0] = ZERO;
-        result[1] = ZERO;
-        result[2] = ZERO;
-        result[3] = last;
+        uint256[16] memory last = board.length > 0 ? board[board.length - 1] : NO_DRAWING;
+        uint256[16][4] memory result = [NO_DRAWING, NO_DRAWING, NO_DRAWING, last];
         return result;
     }
 
-    function draw(uint32 drawing) public returns (uint32) {
+    function draw(uint256[16] calldata drawing) public {
         require(status == Status.Started, "Board must be started before drawing");
-        require(drawing > 0, "Drawing shouldn't be empty");
+        require(isNotEmpty(drawing), "Drawing shouldn't be empty");
         board.push(drawing);
-        return 0;
     }
 
     function finish() public returns (uint32) {
         require(status == Status.Started, "Board must be started in order to be finished");
         status = Status.Finished;
         return 0;
+    }
+
+    function isNotEmpty(uint256[16] calldata drawing) private pure returns(bool) {
+        for (uint i = 0; i < 16;) {
+            if (drawing[i] > 0)
+                return true;
+            unchecked { i += 1; }
+        }
+        return false;
     }
 }
