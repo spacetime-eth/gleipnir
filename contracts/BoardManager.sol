@@ -17,10 +17,9 @@ contract BoardManager {
     uint256[16][] board;
     Status status = Status.Idle;
 
-    function start() public returns (uint32) {
+    function start() public {
         require(status == Status.Idle, "Can't start an already started board");
         status = Status.Started;
-        return 0;
     }
 
     function getCanvas() view public returns (uint256[16][4] memory) {
@@ -36,10 +35,9 @@ contract BoardManager {
         board.push(drawing);
     }
 
-    function finish() public returns (uint32) {
+    function finish() public {
         require(status == Status.Started, "Board must be started in order to be finished");
         status = Status.Finished;
-        return 0;
     }
 
     function isNotEmpty(uint256[16] calldata drawing) private pure returns(bool) {
