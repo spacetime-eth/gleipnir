@@ -33,11 +33,12 @@ contract BoardManager {
 
     function reserveCanvas() public {
         // TODO: check status?
-        for (uint i = first_assignable; i <= last_assignable; i++) {
+        for (uint256 i = first_assignable; i <= last_assignable;) {
             if (_isAssignable(i)) {
                 drawings_info[i] = Drawing(msg.sender, uint48(block.timestamp));
                 return;
             }
+            unchecked {i += 1;}
         }
         // TODO ERROR, NO PLACE FOR A NEW ONE
     }
@@ -81,15 +82,10 @@ contract BoardManager {
                 last += 1;
                 uint256 ringIndex = first - (breakpoint - first_assignable_ring * 4) - 1;
 
-                uint256 threshold_1 = first_assignable_ring;
-                uint256 threshold_2 = first_assignable_ring * 2;
-                uint256 threshold_3 = first_assignable_ring * 3;
-                uint256 threshold_4 = first_assignable_ring * 4 - 1;
-
-                if (ringIndex == threshold_1) last += 1;
-                if (ringIndex == threshold_2) last += 1;
-                if (ringIndex == threshold_3) last += 1;
-                if (ringIndex == threshold_4) last += 1;
+                if (ringIndex == first_assignable_ring ||
+                    ringIndex == first_assignable_ring * 2 ||
+                    ringIndex == first_assignable_ring * 3) last += 1;
+                if (ringIndex == first_assignable_ring * 4 - 1) last += 1;
 
                 if (first_assignable > breakpoint) {
                     // update current ring
@@ -97,9 +93,9 @@ contract BoardManager {
                     breakpoint += first_assignable_ring * 4;
                 }
             } while (!_isEmptyDrawingStorage(drawings_images[first]));
+
             first_assignable = first;
             last_assignable = last;
-            //TODO calculate last assignable
         }
     }
 
@@ -112,7 +108,7 @@ contract BoardManager {
         for (uint i = first_assignable; i <= last_assignable;) {
             if (drawings_info[i].owner == msg.sender)
                 return i;
-        unchecked {i += 1;}
+            unchecked {i += 1;}
         }
         return 0; // TODO throw error or something
     }
