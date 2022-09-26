@@ -4,7 +4,7 @@ import "hardhat/console.sol";
 
 struct Drawing {
     address owner;
-    uint256 timestamp;
+    uint48 timestamp;
 }
 
 contract BoardManager {
@@ -35,7 +35,7 @@ contract BoardManager {
         // TODO: check status?
         for (uint i = first_assignable; i <= last_assignable; i++) {
             if (_isAssignable(i)) {
-                drawings_info[i] = Drawing(msg.sender, block.timestamp);
+                drawings_info[i] = Drawing(msg.sender, uint48(block.timestamp));
                 return;
             }
         }

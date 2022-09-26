@@ -89,10 +89,6 @@ describe("BoardManager", () => {
 
 		it("draws", async () => {
 			for (const expectation of drawExpectations) {
-			//reserve gas BigNumber { value: "70249" }
-			// draw gas BigNumber { value: "436764" }
-			// all good for 26
-
 				const reserveResponse = await manager.reserveCanvas()
 				// @ts-ignore
 				console.log("reserve gas", (await reserveResponse.wait()).gasUsed)
