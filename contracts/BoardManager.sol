@@ -5,7 +5,6 @@ import "hardhat/console.sol";
 struct Drawing {
     address owner;
     uint256 timestamp;
-    uint256[16] image;
 }
 
 contract BoardManager {
@@ -17,7 +16,8 @@ contract BoardManager {
 
     uint256[16] NO_DRAWING;
 
-    mapping(uint => Drawing) drawings;
+    mapping(uint => Drawing) drawings_info;
+    mapping(uint => uint256[16]) drawings_images;
     uint256 first_assignable;
     uint256 last_assignable;
     uint256 first_assignable_ring;
@@ -34,8 +34,8 @@ contract BoardManager {
     function reserveCanvas() public {
         // TODO: check status?
         for (uint i = first_assignable; i <= last_assignable; i++) {
-            if (_isAssignable(drawings[i])) {
-                drawings[i] = Drawing(msg.sender, block.timestamp, NO_DRAWING);
+            if (_isAssignable(i)) {
+                drawings_info[i] = Drawing(msg.sender, block.timestamp);
                 return;
             }
         }
@@ -50,7 +50,7 @@ contract BoardManager {
     }
 
     function getCanvas(uint256 index) view public returns (uint256[16] memory, uint256[16][4] memory) {
-        uint256[16] memory drawing = drawings[index].image;
+        uint256[16] memory drawing = drawings_images[index];
         uint256[16][4] memory neighbors = _getNeighbors(index);
 
         return (drawing, neighbors);
@@ -61,7 +61,7 @@ contract BoardManager {
         require(!_isEmptyDrawing(drawing), "Drawing shouldn't be empty");
 
         uint256 i = _getMyIndex();
-        drawings[i].image = drawing;
+        drawings_images[i] = drawing;
 
         if (first_assignable_ring == 0) {
             // Handle first drawing special case
@@ -76,7 +76,7 @@ contract BoardManager {
             // Update first and last assignable
             uint256 first = first_assignable;
             uint256 last = last_assignable;
-            while (!_isEmptyDrawingStorage(drawings[first].image)) {//change for do while
+            while (!_isEmptyDrawingStorage(drawings_images[first])) {//change for do while
                 first += 1;
                 last += 1;
                 uint256 ringIndex = first - (breakpoint - first_assignable_ring * 4) - 1;
@@ -110,15 +110,16 @@ contract BoardManager {
 
     function _getMyIndex() private view returns (uint256) {
         for (uint i = first_assignable; i <= last_assignable;) {
-            if (drawings[i].owner == msg.sender)
+            if (drawings_info[i].owner == msg.sender)
                 return i;
         unchecked {i += 1;}
         }
         return 0; // TODO throw error or something
     }
 
-    function _isAssignable(Drawing storage drawing) private view returns (bool) {
-        return drawing.owner == address(0x0) || (_hasExpired(drawing.timestamp) && _isEmptyDrawingStorage(drawing.image));
+    function _isAssignable(uint256 i) private view returns (bool) {
+        return drawings_info[i].owner == address(0x0) ||
+            (_hasExpired(drawings_info[i].timestamp) && _isEmptyDrawingStorage(drawings_images[i]));
     }
 
     function _hasExpired(uint256 timestamp) private view returns (bool) {
@@ -129,7 +130,7 @@ contract BoardManager {
         for (uint i = 0; i < 16;) {
             if (drawing[i] > 0)
                 return false;
-        unchecked {i += 1;}
+            unchecked {i += 1;}
         }
         return true;
     }
@@ -168,11 +169,11 @@ contract BoardManager {
         uint256 magic = (side + 2) % 4;
 
         if (lineIndex == 0)
-            result[magic] = drawings[primaryValue].image;
+            result[magic] = drawings_images[primaryValue];
         else {
             bool isLastRingIndex = ringIndex == (ring * 4) - 1;
-            result[(magic + 1) % 4] = drawings[primaryValue - 1].image;
-            result[magic] = drawings[primaryValue - (isLastRingIndex ? (ring - 1) * 4 : 0)].image;
+            result[(magic + 1) % 4] = drawings_images[primaryValue - 1];
+            result[magic] = drawings_images[primaryValue - (isLastRingIndex ? (ring - 1) * 4 : 0)];
         }
 
         return result;
