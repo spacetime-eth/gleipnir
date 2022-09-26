@@ -76,7 +76,7 @@ contract BoardManager {
             // Update first and last assignable
             uint256 first = first_assignable;
             uint256 last = last_assignable;
-            while (!_isEmptyDrawingStorage(drawings_images[first])) {//change for do while
+            do {
                 first += 1;
                 last += 1;
                 uint256 ringIndex = first - (breakpoint - first_assignable_ring * 4) - 1;
@@ -96,7 +96,7 @@ contract BoardManager {
                     first_assignable_ring += 1;
                     breakpoint += first_assignable_ring * 4;
                 }
-            }
+            } while (!_isEmptyDrawingStorage(drawings_images[first]));
             first_assignable = first;
             last_assignable = last;
             //TODO calculate last assignable
