@@ -76,10 +76,10 @@ contract BoardManager {
             // Update first and last assignable
             uint256 first = first_assignable;
             uint256 last = last_assignable;
-            while (!_isEmptyDrawingStorage(drawings[first].image)) {
+            while (!_isEmptyDrawingStorage(drawings[first].image)) {//change for do while
                 first += 1;
                 last += 1;
-                uint256 ringIndex = first - breakpoint - 1;
+                uint256 ringIndex = first - (breakpoint - first_assignable_ring * 4) - 1;
 
                 uint256 threshold_1 = first_assignable_ring;
                 uint256 threshold_2 = first_assignable_ring * 2;
@@ -108,42 +108,42 @@ contract BoardManager {
         status = Status.Finished;
     }
 
-    function _getMyIndex() private view returns(uint256) {
+    function _getMyIndex() private view returns (uint256) {
         for (uint i = first_assignable; i <= last_assignable;) {
             if (drawings[i].owner == msg.sender)
                 return i;
-            unchecked { i += 1; }
+        unchecked {i += 1;}
         }
         return 0; // TODO throw error or something
     }
 
-    function _isAssignable(Drawing storage drawing) private view returns(bool) {
-        return drawing.owner == address(0x0) || (_hasExpired(drawing.timestamp) && _isEmptyDrawingStorage(drawing.image)); 
+    function _isAssignable(Drawing storage drawing) private view returns (bool) {
+        return drawing.owner == address(0x0) || (_hasExpired(drawing.timestamp) && _isEmptyDrawingStorage(drawing.image));
     }
 
-    function _hasExpired(uint256 timestamp) private view returns(bool) {
+    function _hasExpired(uint256 timestamp) private view returns (bool) {
         return timestamp + EXPIRATION_TIME < block.timestamp;
     }
 
-    function _isEmptyDrawing(uint256[16] calldata drawing) private pure returns(bool) {
+    function _isEmptyDrawing(uint256[16] calldata drawing) private pure returns (bool) {
         for (uint i = 0; i < 16;) {
             if (drawing[i] > 0)
                 return false;
-            unchecked { i += 1; }
+        unchecked {i += 1;}
         }
         return true;
     }
 
-    function _isEmptyDrawingStorage(uint256[16] storage drawing) private view returns(bool) {
+    function _isEmptyDrawingStorage(uint256[16] storage drawing) private view returns (bool) {
         for (uint i = 0; i < 16;) {
             if (drawing[i] > 0)
                 return false;
-            unchecked { i += 1; }
+        unchecked {i += 1;}
         }
         return true;
     }
 
-    function _getNeighbors(uint256 index) private view returns(uint256[16][4] memory) {
+    function _getNeighbors(uint256 index) private view returns (uint256[16][4] memory) {
         uint256[16][4] memory result;
         if (index == 0) return result;
         uint256 ringIndex = index;
@@ -156,21 +156,23 @@ contract BoardManager {
         ringIndex--;
         uint256 lineIndex = ringIndex % ring;
 
+        uint256 threshold_1 = ring;
         uint256 threshold_2 = ring * 2;
         uint256 threshold_3 = ring * 3;
-        uint256 threshold_4 = ring * 4 - 1;
 
-        uint256 side = ringIndex < threshold_4 ? (ringIndex < threshold_3 ? (ringIndex < threshold_2 ? 0 : 1) : 2) : 3;
+        uint256 side = ringIndex < threshold_1 ? 0 : ringIndex < threshold_2 ? 1 : ringIndex < threshold_3 ? 2 : 3;
 
         // ring 1 is a special case for some reason
         uint256 primaryValue = index - side - (ring == 1 ? 1 : (ring - 1) * 4);
 
+        uint256 magic = (side + 2) % 4;
+
         if (lineIndex == 0)
-            result[side] = drawings[primaryValue].image;
+            result[magic] = drawings[primaryValue].image;
         else {
             bool isLastRingIndex = ringIndex == (ring * 4) - 1;
-            result[(side + 1) % 4] = drawings[primaryValue - 1].image;
-            result[side] = drawings[primaryValue - (isLastRingIndex ? (ring - 1) * 4 : 0)].image;
+            result[(magic + 1) % 4] = drawings[primaryValue - 1].image;
+            result[magic] = drawings[primaryValue - (isLastRingIndex ? (ring - 1) * 4 : 0)].image;
         }
 
         return result;
