@@ -127,10 +127,10 @@ const toBigNumberResponse = (value: number) => BigNumber.from(value)
 
 const EMPTY_CANVAS = Array(16).fill(0n)
 const EMPTY_CANVAS_RESPONSE = EMPTY_CANVAS.map(toBigNumberResponse)
-const DRAWING_A_REQUEST = Array.from(Array(16), (_, i) => i)
+const DRAWING_A_REQUEST = Array.from(Array(16), (_, i) => i + 1)
 
 function drawingForNumber(value: number) {
-	return Array.from(Array(16), (_, i) => i + value)
+	return Array.from(Array(16), (_, i) => i + value + 1)
 }
 
 function drawingPropertyToIndexes(value: Neighbors) {

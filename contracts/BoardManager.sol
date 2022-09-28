@@ -2,11 +2,6 @@
 pragma solidity ^0.8.9;
 import "hardhat/console.sol";
 
-struct Drawing {
-    address owner;
-    uint48 timestamp;
-}
-
 contract BoardManager {
     enum Status {
         Idle,
@@ -32,14 +27,13 @@ contract BoardManager {
         uint256 _firstAssignable = uint256(uint64(_iterationData));
         uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
 
-        for (uint i = _firstAssignable; i <= _lastAssignable;) {
+        for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i)) {
             if (_isAssignable(i)) {
                 uint256 info = uint256(uint160(msg.sender));
                 info |= block.timestamp<<160;
                 drawings_info[i] = info;
                 return;
             }
-            unchecked {i += 1;}
         }
         // TODO ERROR, NO PLACE FOR A NEW ONE
     }
@@ -77,11 +71,11 @@ contract BoardManager {
 
         uint256 _firstAssignable = uint256(uint64(_iterationData));
         if (i == _firstAssignable) {
-            // Update first and last assignable
             uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
             uint256 _ring = uint256(uint64(_iterationData>>128));
             uint256 _breakpoint = uint256(uint64(_iterationData>>192));
             do {
+                // Update first and last assignable
                 unchecked { _firstAssignable += 1; }
                 unchecked { _lastAssignable += 1; }
                 uint256 ringIndex;
@@ -101,8 +95,7 @@ contract BoardManager {
                     unchecked { _ring += 1; }
                     unchecked { _breakpoint += _ring * 4; }
                 }
-            } while (!_isEmptyDrawingStorage(drawings_images[_firstAssignable]));
-
+            } while (!_isEmptyDrawingStorage(_firstAssignable));
 
             _iterationData = _firstAssignable;
             _iterationData |= _lastAssignable<<64;
@@ -118,25 +111,25 @@ contract BoardManager {
     }
 
     function _getMyIndex() private view returns (uint256) {
-        //mapping(uint256 => Drawing) memory _drawings_info = drawings_info;
         uint256 _iterationData = iterationData;
         uint256 _firstAssignable = uint256(uint64(_iterationData));
         uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
 
-        for (uint i = _firstAssignable; i <= _lastAssignable;) {
+        for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i)) {
             if (address(uint160(drawings_info[i])) == msg.sender)
                 return i;
-            unchecked {i += 1;}
         }
         return 0; // TODO throw error or something
     }
+
+    function unchecked_inc(uint256 i) private pure returns(uint256) { unchecked { return i + 1; } }
 
     function _isAssignable(uint256 i) private view returns (bool) {
         uint256 info = drawings_info[i];
         address owner = address(uint160(info));
         if (owner == address(0x0)) return true;
         uint256 timestamp = uint256(uint40(info>>160));
-        return _hasExpired(timestamp) && _isEmptyDrawingStorage(drawings_images[i]);
+        return _hasExpired(timestamp) && _isEmptyDrawingStorage(i);
     }
 
     function _hasExpired(uint256 timestamp) private view returns (bool) {
@@ -144,22 +137,14 @@ contract BoardManager {
     }
 
     function _isEmptyDrawing(uint256[16] calldata drawing) private pure returns (bool) {
-        for (uint i = 0; i < 16;) {
-            if (drawing[i] > 0)
-                return false;
-            unchecked {i += 1;}
-        }
-        return true;
+        for (uint i = 0; i < 16; i = unchecked_inc(i))
+            if (drawing[i] == 0)
+                return true;
+        return false;
     }
 
-    //We may save 34k if we validate all sections separately instead of full drawing
-    function _isEmptyDrawingStorage(uint256[16] storage drawing) private view returns (bool) {
-        for (uint i = 0; i < 16;) {
-            if (drawing[i] > 0)
-                return false;
-            unchecked {i += 1;}
-        }
-        return true;
+    function _isEmptyDrawingStorage(uint256 index) private view returns (bool) {
+        return drawings_images[index][0] == 0;
     }
 
     function _getNeighbors(uint256 index) private view returns (uint256[16][4] memory) {
