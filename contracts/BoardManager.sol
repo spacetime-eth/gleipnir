@@ -18,8 +18,8 @@ contract BoardManager {
 
     mapping(uint => Drawing) drawings_info;
     mapping(uint => uint256[16]) drawings_images;
-    uint256 first_assignable;
-    uint256 last_assignable;
+    uint256 firstAssignable;
+    uint256 lastAssignable;
     uint256 first_assignable_ring;
     uint256 breakpoint;
     uint256 EXPIRATION_TIME = 1800; //TODO determine time limit
@@ -33,7 +33,7 @@ contract BoardManager {
 
     function reserveCanvas() public {
         // TODO: check status?
-        for (uint256 i = first_assignable; i <= last_assignable;) {
+        for (uint256 i = firstAssignable; i <= lastAssignable;) {
             if (_isAssignable(i)) {
                 drawings_info[i] = Drawing(msg.sender, uint48(block.timestamp));
                 return;
@@ -63,39 +63,46 @@ contract BoardManager {
 
         uint256 i = _getMyIndex();
         drawings_images[i] = drawing;
-
-        if (first_assignable_ring == 0) {
+        uint256 _ring = first_assignable_ring;
+        if (_ring == 0) {
             // Handle first drawing special case
-            first_assignable = 1;
-            last_assignable = 4;
+            firstAssignable = 1;
+            lastAssignable = 4;
             first_assignable_ring = 1;
             breakpoint = 4;
             return;
         }
 
-        if (i == first_assignable) {
+        uint256 _firstAssignable = firstAssignable;
+        if (i == _firstAssignable) {
             // Update first and last assignable
-            uint256 first = first_assignable;
-            uint256 last = last_assignable;
+            uint256 _lastAssignable = lastAssignable;
+            uint256 _breakpoint = breakpoint;
             do {
-                first += 1;
-                last += 1;
-                uint256 ringIndex = first - (breakpoint - first_assignable_ring * 4) - 1;
+                unchecked { _firstAssignable += 1; }
+                unchecked { _lastAssignable += 1; }
+                uint256 ringIndex = _firstAssignable - (_breakpoint - _ring * 4) - 1;
 
-                if (ringIndex == first_assignable_ring ||
-                    ringIndex == first_assignable_ring * 2 ||
-                    ringIndex == first_assignable_ring * 3) last += 1;
-                if (ringIndex == first_assignable_ring * 4 - 1) last += 1;
-
-                if (first_assignable > breakpoint) {
-                    // update current ring
-                    first_assignable_ring += 1;
-                    breakpoint += first_assignable_ring * 4;
+                if (ringIndex == _ring ||
+                    ringIndex == _ring * 2 ||
+                    ringIndex == _ring * 3) {
+                    unchecked { _lastAssignable += 1; }
                 }
-            } while (!_isEmptyDrawingStorage(drawings_images[first]));
+                if (ringIndex == _ring * 4 - 1) {
+                    unchecked { _lastAssignable += 1; }
+                }
 
-            first_assignable = first;
-            last_assignable = last;
+                if (_firstAssignable > _breakpoint) {
+                    // update current ring
+                    unchecked { _ring += 1; }
+                    unchecked { _breakpoint += _ring * 4; }
+                }
+            } while (!_isEmptyDrawingStorage(drawings_images[_firstAssignable]));
+
+            breakpoint = _breakpoint;
+            first_assignable_ring = _ring;
+            firstAssignable = _firstAssignable;
+            lastAssignable = _lastAssignable;
         }
     }
 
@@ -105,7 +112,8 @@ contract BoardManager {
     }
 
     function _getMyIndex() private view returns (uint256) {
-        for (uint i = first_assignable; i <= last_assignable;) {
+        //mapping(uint256 => Drawing) memory _drawings_info = drawings_info;
+        for (uint i = firstAssignable; i <= lastAssignable;) {
             if (drawings_info[i].owner == msg.sender)
                 return i;
             unchecked {i += 1;}
@@ -131,11 +139,12 @@ contract BoardManager {
         return true;
     }
 
+    //We may save 34k if we validate all sections separately instead of full drawing
     function _isEmptyDrawingStorage(uint256[16] storage drawing) private view returns (bool) {
         for (uint i = 0; i < 16;) {
             if (drawing[i] > 0)
                 return false;
-        unchecked {i += 1;}
+            unchecked {i += 1;}
         }
         return true;
     }
