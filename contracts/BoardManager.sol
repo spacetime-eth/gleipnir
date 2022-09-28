@@ -81,7 +81,8 @@ contract BoardManager {
             do {
                 unchecked { _firstAssignable += 1; }
                 unchecked { _lastAssignable += 1; }
-                uint256 ringIndex = _firstAssignable - (_breakpoint - _ring * 4) - 1;
+                uint256 ringIndex;
+                unchecked {ringIndex = _firstAssignable - (_breakpoint - _ring * 4) - 1; }
 
                 if (ringIndex == _ring ||
                     ringIndex == _ring * 2 ||
