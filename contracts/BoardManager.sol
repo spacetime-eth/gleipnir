@@ -14,15 +14,10 @@ contract BoardManager {
         Finished
     }
 
-    uint256[16] NO_DRAWING;
-
-    mapping(uint => Drawing) drawings_info;
+    mapping(uint => uint256) drawings_info;
     mapping(uint => uint256[16]) drawings_images;
-    uint256 firstAssignable;
-    uint256 lastAssignable;
-    uint256 first_assignable_ring;
-    uint256 breakpoint;
-    uint256 EXPIRATION_TIME = 1800; //TODO determine time limit
+    uint256 iterationData;
+    uint256 constant EXPIRATION_TIME = 1800; //TODO determine time limit
 
     Status status = Status.Idle;
 
@@ -33,9 +28,15 @@ contract BoardManager {
 
     function reserveCanvas() public {
         // TODO: check status?
-        for (uint256 i = firstAssignable; i <= lastAssignable;) {
+        uint256 _iterationData = iterationData;
+        uint256 _firstAssignable = uint256(uint64(_iterationData));
+        uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
+
+        for (uint i = _firstAssignable; i <= _lastAssignable;) {
             if (_isAssignable(i)) {
-                drawings_info[i] = Drawing(msg.sender, uint48(block.timestamp));
+                uint256 info = uint256(uint160(msg.sender));
+                info |= block.timestamp<<160;
+                drawings_info[i] = info;
                 return;
             }
             unchecked {i += 1;}
@@ -63,21 +64,23 @@ contract BoardManager {
 
         uint256 i = _getMyIndex();
         drawings_images[i] = drawing;
-        uint256 _ring = first_assignable_ring;
-        if (_ring == 0) {
+        uint256 _iterationData = iterationData;
+        if (_iterationData == 0) {
             // Handle first drawing special case
-            firstAssignable = 1;
-            lastAssignable = 4;
-            first_assignable_ring = 1;
-            breakpoint = 4;
+            _iterationData = 1;       //first
+            _iterationData |= 4<<64;  //last
+            _iterationData |= 1<<128; //ring
+            _iterationData |= 4<<192; //breakpoint
+            iterationData = _iterationData;
             return;
         }
 
-        uint256 _firstAssignable = firstAssignable;
+        uint256 _firstAssignable = uint256(uint64(_iterationData));
         if (i == _firstAssignable) {
             // Update first and last assignable
-            uint256 _lastAssignable = lastAssignable;
-            uint256 _breakpoint = breakpoint;
+            uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
+            uint256 _ring = uint256(uint64(_iterationData>>128));
+            uint256 _breakpoint = uint256(uint64(_iterationData>>192));
             do {
                 unchecked { _firstAssignable += 1; }
                 unchecked { _lastAssignable += 1; }
@@ -100,10 +103,12 @@ contract BoardManager {
                 }
             } while (!_isEmptyDrawingStorage(drawings_images[_firstAssignable]));
 
-            breakpoint = _breakpoint;
-            first_assignable_ring = _ring;
-            firstAssignable = _firstAssignable;
-            lastAssignable = _lastAssignable;
+
+            _iterationData = _firstAssignable;
+            _iterationData |= _lastAssignable<<64;
+            _iterationData |= _ring<<128;
+            _iterationData |= _breakpoint<<192;
+            iterationData = _iterationData;
         }
     }
 
@@ -114,8 +119,12 @@ contract BoardManager {
 
     function _getMyIndex() private view returns (uint256) {
         //mapping(uint256 => Drawing) memory _drawings_info = drawings_info;
-        for (uint i = firstAssignable; i <= lastAssignable;) {
-            if (drawings_info[i].owner == msg.sender)
+        uint256 _iterationData = iterationData;
+        uint256 _firstAssignable = uint256(uint64(_iterationData));
+        uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
+
+        for (uint i = _firstAssignable; i <= _lastAssignable;) {
+            if (address(uint160(drawings_info[i])) == msg.sender)
                 return i;
             unchecked {i += 1;}
         }
@@ -123,8 +132,11 @@ contract BoardManager {
     }
 
     function _isAssignable(uint256 i) private view returns (bool) {
-        return drawings_info[i].owner == address(0x0) ||
-            (_hasExpired(drawings_info[i].timestamp) && _isEmptyDrawingStorage(drawings_images[i]));
+        uint256 info = drawings_info[i];
+        address owner = address(uint160(info));
+        if (owner == address(0x0)) return true;
+        uint256 timestamp = uint256(uint40(info>>160));
+        return _hasExpired(timestamp) && _isEmptyDrawingStorage(drawings_images[i]);
     }
 
     function _hasExpired(uint256 timestamp) private view returns (bool) {
