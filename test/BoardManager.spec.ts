@@ -54,15 +54,15 @@ describe("BoardManager", () => {
 
 	describe("board is idle", () => {
 		it("fails to get canvas", async () => {
-			await expect(manager.getMyCanvas()).to.be.revertedWith(
-				"Board must be started before getting a canvas"
-			)
+			await expect(manager.getMyCanvas()).to.be.revertedWith(ERROR_NOT_STARTED)
 		})
 
 		it("fails to draw", async () => {
-			await expect(manager.draw(DRAWING_A_REQUEST)).to.be.revertedWith(
-				"Board must be started before drawing"
-			)
+			await expect(manager.draw(DRAWING_A_REQUEST)).to.be.revertedWith(ERROR_NOT_STARTED)
+		})
+
+		it("fails to reserve canvas", async () => {
+			await expect(manager.reserveCanvas()).to.be.revertedWith(ERROR_NOT_STARTED)
 		})
 	})
 
@@ -143,3 +143,5 @@ function drawingPropertyToIndexes(value: Neighbors) {
 	if (value.left !== undefined) result[3] = drawingForNumber(value.left).map(toBigNumberResponse)
 	return result
 }
+
+const ERROR_NOT_STARTED = "Board must be started"

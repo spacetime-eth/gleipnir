@@ -8,6 +8,8 @@ contract BoardManager {
         Started,
         Finished
     }
+    string constant ERROR_NOT_STARTED = "Board must be started";
+
     uint256 constant CHUNK_AMOUNT = 16;
     mapping(uint => uint256) drawings_info;
     mapping(uint => uint256[CHUNK_AMOUNT]) drawings_images;
@@ -21,8 +23,13 @@ contract BoardManager {
         status = Status.Started;
     }
 
+    //todo reserve canvas should throw error if no place was found
+    //todo reserve may assign an expired place
+    //todo draw will skip already drawn (drawing-drawn)
+    //todo draw will skip already drawn (drawing)
+
     function reserveCanvas() public {
-        // TODO: check status?
+        require(status == Status.Started, ERROR_NOT_STARTED);
         uint256 _iterationData = iterationData;
         uint256 _firstAssignable = uint256(uint64(_iterationData));
         uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
@@ -35,11 +42,10 @@ contract BoardManager {
                 return;
             }
         }
-        // TODO ERROR, NO PLACE FOR A NEW ONE
     }
 
     function getMyCanvas() view public returns (uint256[CHUNK_AMOUNT][4] memory) {
-        require(status == Status.Started, "Board must be started before getting a canvas");
+        require(status == Status.Started, ERROR_NOT_STARTED);
         uint256 currentIndex = _getMyIndex();
         (uint256[CHUNK_AMOUNT] memory me, uint256[CHUNK_AMOUNT][4] memory neighbors) = getCanvas(currentIndex);
         return neighbors;
@@ -52,8 +58,13 @@ contract BoardManager {
         return (drawing, neighbors);
     }
 
+    //TODO draw must fail if no place for me
+    //TODO draw may let you draw even tho you are expired
+    //TODO draw will not let you draw if expired and another one took my place
+    //TODO once you draw, you lose your spot
+
     function draw(uint256[CHUNK_AMOUNT] calldata drawing) public {
-        require(status == Status.Started, "Board must be started before drawing");
+        require(status == Status.Started, ERROR_NOT_STARTED);
         require(!_isEmptyDrawing(drawing), "Drawing shouldn't be empty");
 
         uint256 i = _getMyIndex();
