@@ -93,7 +93,7 @@ describe("BoardManager", () => {
 				// @ts-ignore
 				console.log("reserve gas", (await reserveResponse.wait()).gasUsed)
 				let board = await manager.getMyCanvas()
-				const drawResponse = await manager.draw(drawingForNumber(expectation.value))
+				const drawResponse = await manager.draw(drawingForNumber(expectation.value) as any)
 				console.log("draw gas", (await drawResponse.wait()).gasUsed)
 
 				expect(board).to.deep.equal(
@@ -125,12 +125,14 @@ describe("BoardManager", () => {
 
 const toBigNumberResponse = (value: number) => BigNumber.from(value)
 
-const EMPTY_CANVAS = Array(16).fill(0n)
-const EMPTY_CANVAS_RESPONSE = EMPTY_CANVAS.map(toBigNumberResponse)
-const DRAWING_A_REQUEST = Array.from(Array(16), (_, i) => i + 1)
+
+const CHUNK_AMOUNT = 16
+const EMPTY_CANVAS: any = Array(CHUNK_AMOUNT).fill(0n)
+const EMPTY_CANVAS_RESPONSE: any = EMPTY_CANVAS.map(toBigNumberResponse)
+const DRAWING_A_REQUEST: any = Array.from(Array(CHUNK_AMOUNT), (_, i) => i + 1)
 
 function drawingForNumber(value: number) {
-	return Array.from(Array(16), (_, i) => i + value + 1)
+	return Array.from(Array(CHUNK_AMOUNT), (_, i) => i + value + 1)
 }
 
 function drawingPropertyToIndexes(value: Neighbors) {

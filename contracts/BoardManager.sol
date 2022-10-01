@@ -8,9 +8,9 @@ contract BoardManager {
         Started,
         Finished
     }
-
+    uint256 constant CHUNK_AMOUNT = 16;
     mapping(uint => uint256) drawings_info;
-    mapping(uint => uint256[16]) drawings_images;
+    mapping(uint => uint256[CHUNK_AMOUNT]) drawings_images;
     uint256 iterationData;
     uint256 constant EXPIRATION_TIME = 1800; //TODO determine time limit
 
@@ -38,21 +38,21 @@ contract BoardManager {
         // TODO ERROR, NO PLACE FOR A NEW ONE
     }
 
-    function getMyCanvas() view public returns (uint256[16][4] memory) {
+    function getMyCanvas() view public returns (uint256[CHUNK_AMOUNT][4] memory) {
         require(status == Status.Started, "Board must be started before getting a canvas");
         uint256 currentIndex = _getMyIndex();
-        (uint256[16] memory me, uint256[16][4] memory neighbors) = getCanvas(currentIndex);
+        (uint256[CHUNK_AMOUNT] memory me, uint256[CHUNK_AMOUNT][4] memory neighbors) = getCanvas(currentIndex);
         return neighbors;
     }
 
-    function getCanvas(uint256 index) view public returns (uint256[16] memory, uint256[16][4] memory) {
-        uint256[16] memory drawing = drawings_images[index];
-        uint256[16][4] memory neighbors = _getNeighbors(index);
+    function getCanvas(uint256 index) view public returns (uint256[CHUNK_AMOUNT] memory, uint256[CHUNK_AMOUNT][4] memory) {
+        uint256[CHUNK_AMOUNT] memory drawing = drawings_images[index];
+        uint256[CHUNK_AMOUNT][4] memory neighbors = _getNeighbors(index);
 
         return (drawing, neighbors);
     }
 
-    function draw(uint256[16] calldata drawing) public {
+    function draw(uint256[CHUNK_AMOUNT] calldata drawing) public {
         require(status == Status.Started, "Board must be started before drawing");
         require(!_isEmptyDrawing(drawing), "Drawing shouldn't be empty");
 
@@ -136,8 +136,8 @@ contract BoardManager {
         return timestamp + EXPIRATION_TIME < block.timestamp;
     }
 
-    function _isEmptyDrawing(uint256[16] calldata drawing) private pure returns (bool) {
-        for (uint i = 0; i < 16; i = unchecked_inc(i))
+    function _isEmptyDrawing(uint256[CHUNK_AMOUNT] calldata drawing) private pure returns (bool) {
+        for (uint i = 0; i < CHUNK_AMOUNT; i = unchecked_inc(i))
             if (drawing[i] == 0)
                 return true;
         return false;
@@ -147,8 +147,8 @@ contract BoardManager {
         return drawings_images[index][0] == 0;
     }
 
-    function _getNeighbors(uint256 index) private view returns (uint256[16][4] memory) {
-        uint256[16][4] memory result;
+    function _getNeighbors(uint256 index) private view returns (uint256[CHUNK_AMOUNT][4] memory) {
+        uint256[CHUNK_AMOUNT][4] memory result;
         if (index == 0) return result;
         uint256 ringIndex = index;
 
