@@ -82,6 +82,7 @@ describe("BoardManager", () => {
 		})
 
 		it("returns canvas", async () => {
+			await manager.reserveCanvas()
 			const result = await manager.getMyCanvas()
 			expect(result).to.deep.equal([
 				EMPTY_CANVAS_RESPONSE,
@@ -113,6 +114,7 @@ describe("BoardManager", () => {
 		})
 
 		it("finishes", async () => {
+			await manager.reserveCanvas()
 			await manager.draw(DRAWING_A_REQUEST)
 			await manager.finish()
 		})
@@ -199,6 +201,55 @@ describe("BoardManager", () => {
 				await expect(reserve_canvas_for_signer(0)).to.be.revertedWith(ERROR_MAX_CONCURRENCY)
 			})
 
+			it("draw fails if did not reserve", async () => {
+				await reserve_canvas_for_signer(1)
+
+				await expect(draw_canvas_for_signer(0)).to.be.revertedWith(ERROR_NOT_RESERVED)
+			})
+
+			it("draw fails if reservation was already drawn", async () => {
+				//this is so we do not advance the minimum
+				await reserve_canvas_for_signer(1)
+
+				await reserve_canvas_for_signer(0)
+				await draw_canvas_for_signer(0)
+
+				await expect(draw_canvas_for_signer(0)).to.be.revertedWith(ERROR_NOT_RESERVED)
+			})
+
+			it("draw succeeds even tho expired", async () => {
+				await reserve_canvas_for_signer(0)
+
+				await ethers.provider.send("evm_increaseTime", [1801])
+				//TODO This should be any value, or ever better, check it correctly drawed
+				await expect(draw_canvas_for_signer(0)).to.not.be.revertedWith(ERROR_NOT_RESERVED)
+			})
+
+			it("draw fails if someone took my place because of expiration", async () => {
+				await reserve_canvas_for_signer(0)
+
+				await ethers.provider.send("evm_increaseTime", [1801])
+				await reserve_canvas_for_signer(1)
+
+				await expect(draw_canvas_for_signer(0)).to.be.revertedWith(ERROR_NOT_RESERVED)
+			})
+
+			it("no new unlocks for drawing non minimums", async () => {
+				//max concurrency is 4 at first ring
+				await reserve_canvas_for_signer(1)
+				await reserve_canvas_for_signer(2)
+				await reserve_canvas_for_signer(3)
+				await reserve_canvas_for_signer(4)
+
+				//1 is not drawn, so no minimums are added
+				await draw_canvas_for_signer(2)
+				await draw_canvas_for_signer(3)
+				await draw_canvas_for_signer(4)
+
+				//This is a really sad use case. In practice, it is unlikely once it gains traction.
+				await expect(reserve_canvas_for_signer(0)).to.be.revertedWith(ERROR_MAX_CONCURRENCY)
+			})
+
 			async function reserve_canvas_for_signer(index: number) {
 				return await manager.connect(signers[index]).reserveCanvas()
 			}
@@ -211,13 +262,6 @@ describe("BoardManager", () => {
 				return await manager.connect(signers[index]).draw(DRAWING_A_REQUEST)
 			}
 		})
-
-    //TODO draw must fail if no place for me
-    //TODO draw may let you draw even tho you are expired
-    //TODO draw will not let you draw if expired and another one took my place
-    //TODO once you draw, you lose your spot
-
-    //TODO no new unlocks from non minimums
 	})
 })
 
@@ -245,3 +289,4 @@ function drawingPropertyToIndexes(value: Neighbors) {
 const ERROR_NOT_STARTED = "Board must be started"
 const ERROR_NOT_IDLE = "Board must be idle"
 const ERROR_MAX_CONCURRENCY = "Max concurrency reached"
+const ERROR_NOT_RESERVED = "Need to reserve first"

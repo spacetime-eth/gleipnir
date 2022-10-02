@@ -11,6 +11,7 @@ contract BoardManager {
     string constant ERROR_NOT_IDLE = "Board must be idle";
     string constant ERROR_NOT_STARTED = "Board must be started";
     string constant ERROR_MAX_CONCURRENCY = "Max concurrency reached";
+    string constant ERROR_NOT_RESERVED = "Need to reserve first";
 
     uint256 constant CHUNK_AMOUNT = 16;
     mapping(uint => uint256) drawings_info;
@@ -116,7 +117,7 @@ contract BoardManager {
         status = Status.Finished;
     }
 
-    //TODO check if should be merged with _getMyIndex
+    //TODO check if should be merged with _getMyIndex, there may be performance shenanigans for public
     function getMyCanvasIndex() public view returns (uint256) {
         return _getMyIndex();
     }
@@ -129,7 +130,7 @@ contract BoardManager {
         for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i))
             if (address(uint160(drawings_info[i])) == msg.sender && _isEmptyDrawingStorage(i))
                 return i;
-        return 0; // TODO throw error or something
+        revert(ERROR_NOT_RESERVED);
     }
 
     function unchecked_inc(uint256 i) private pure returns(uint256) { unchecked { return i + 1; } }
