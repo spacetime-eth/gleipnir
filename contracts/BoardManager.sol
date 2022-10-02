@@ -8,7 +8,9 @@ contract BoardManager {
         Started,
         Finished
     }
+    string constant ERROR_NOT_IDLE = "Board must be idle";
     string constant ERROR_NOT_STARTED = "Board must be started";
+    string constant ERROR_MAX_CONCURRENCY = "Max concurrency reached";
 
     uint256 constant CHUNK_AMOUNT = 16;
     mapping(uint => uint256) drawings_info;
@@ -19,14 +21,10 @@ contract BoardManager {
     Status status = Status.Idle;
 
     function start() public {
-        require(status == Status.Idle, "Can't start an already started board");
+        require(status == Status.Idle, ERROR_NOT_IDLE);
         status = Status.Started;
     }
 
-    //todo reserve canvas should throw error if no place was found
-    //todo reserve may assign an expired place
-    //todo draw will skip already drawn (drawing-drawn)
-    //todo draw will skip already drawn (drawing)
 
     function reserveCanvas() public {
         require(status == Status.Started, ERROR_NOT_STARTED);
@@ -42,6 +40,8 @@ contract BoardManager {
                 return;
             }
         }
+
+        revert(ERROR_MAX_CONCURRENCY);
     }
 
     function getMyCanvas() view public returns (uint256[CHUNK_AMOUNT][4] memory) {
@@ -117,7 +117,7 @@ contract BoardManager {
     }
 
     function finish() public {
-        require(status == Status.Started, "Board must be started in order to be finished");
+        require(status == Status.Started, ERROR_NOT_STARTED);
         status = Status.Finished;
     }
 
