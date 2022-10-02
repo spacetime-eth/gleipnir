@@ -1,4 +1,5 @@
 import {loadFixture} from "@nomicfoundation/hardhat-network-helpers"
+import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers"
 import {expect} from "chai"
 import {BigNumber} from "ethers"
 import {ethers} from "hardhat"
@@ -46,6 +47,11 @@ describe("BoardManager", () => {
 	}
 
 	let manager: BoardManager
+	let signers: Array<SignerWithAddress>
+
+	before(async () => {
+		signers = await ethers.getSigners()
+	})
 
 	beforeEach(async () => {
 		//@ts-ignore
@@ -85,19 +91,18 @@ describe("BoardManager", () => {
 			])
 		})
 
-		xit("draws", async () => {
+		it("draws", async () => {
 			for (const expectation of drawExpectations) {
 				const reserveResponse = await manager.reserveCanvas()
-				// @ts-ignore
-				console.log("reserve gas", (await reserveResponse.wait()).gasUsed)
+				//console.log("reserve gas", (await reserveResponse.wait()).gasUsed)
 				let board = await manager.getMyCanvas()
 				const drawResponse = await manager.draw(drawingForNumber(expectation.value) as any)
-				console.log("draw gas", (await drawResponse.wait()).gasUsed)
+				//console.log("draw gas", (await drawResponse.wait()).gasUsed)
 
 				expect(board).to.deep.equal(
 					drawingPropertyToIndexes(expectation.neighbors)
 				)
-				console.log("all good for", expectation.value)
+				//console.log("all good for", expectation.value)
 			}
 		})
 
@@ -117,24 +122,78 @@ describe("BoardManager", () => {
 			await expect(manager.finish()).to.be.revertedWith(ERROR_NOT_STARTED)
 		})
 
-		it("fails to reserve canvas when no place is found", async () => {
-			await manager.reserveCanvas()
-			await manager.draw(DRAWING_A_REQUEST)
+		describe("first assignable is at the start of first ring", async () => {
+			beforeEach(async () => {
+				await manager.reserveCanvas()
+				await manager.draw(DRAWING_A_REQUEST)
+			})
 
-			//max concurrency is 4 at first ring
-			await manager.reserveCanvas()
-			await manager.reserveCanvas()
-			await manager.reserveCanvas()
-			await manager.reserveCanvas()
+			it("assigns first assignable space", async () => {
+				await manager.reserveCanvas()
 
-			await expect(manager.reserveCanvas()).to.be.revertedWith(ERROR_MAX_CONCURRENCY)
+				await expect(await manager.getMyCanvasIndex()).to.equal(1)
+			})
+
+			it("reassigns same space if same signer", async () => {
+				await reserve_canvas_for_signer(0)
+
+				await reserve_canvas_for_signer(0)
+				await expect(await get_canvas_index_for_signer(0)).to.equal(1)
+			})
+
+			it("skips if other is drawing", async () => {
+				await reserve_canvas_for_signer(1)
+
+				await reserve_canvas_for_signer(0)
+				await expect(await get_canvas_index_for_signer(0)).to.equal(2)
+			})
+
+			it("skips drawn", async () => {
+				await reserve_canvas_for_signer(1)
+				await draw_canvas_for_signer(1)
+
+				await reserve_canvas_for_signer(0)
+				await expect(await get_canvas_index_for_signer(0)).to.equal(2)
+			})
+
+			it("skips drawing and drawn", async () => {
+				await reserve_canvas_for_signer(1)
+
+				await reserve_canvas_for_signer(0)
+				await draw_canvas_for_signer(0)
+
+				await reserve_canvas_for_signer(0)
+				await expect(await get_canvas_index_for_signer(0)).to.equal(3)
+			})
+
+			it("fails to reserve canvas when no place is found", async () => {
+				//max concurrency is 4 at first ring
+				await reserve_canvas_for_signer(1)
+				await reserve_canvas_for_signer(2)
+				await reserve_canvas_for_signer(3)
+				await reserve_canvas_for_signer(4)
+
+				await expect(reserve_canvas_for_signer(0)).to.be.revertedWith(ERROR_MAX_CONCURRENCY)
+			})
+
+			async function reserve_canvas_for_signer(index: number) {
+				return await manager.connect(signers[index]).reserveCanvas()
+			}
+
+			async function get_canvas_index_for_signer(index: number) {
+				return await manager.connect(signers[index]).getMyCanvasIndex()
+			}
+
+			async function draw_canvas_for_signer(index: number) {
+				return await manager.connect(signers[index]).draw(DRAWING_A_REQUEST)
+			}
 		})
 
-    //todo reserve may assign an expired place
-    //todo draw will skip already drawn (drawing-drawn)
-    //todo draw will skip already drawn (drawing)
-    //todo cannot reserve canvas twice (or can we?)
-    //todo re-reserve extends lifetime?
+
+		//todo reserve may assign an expired place
+
+		//todo cannot reserve canvas twice (or can we?)
+		//todo re-reserve extends lifetime?
 	})
 })
 

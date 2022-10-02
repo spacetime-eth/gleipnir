@@ -121,15 +121,19 @@ contract BoardManager {
         status = Status.Finished;
     }
 
+    //TODO check if should be merged with _getMyIndex
+    function getMyCanvasIndex() public view returns (uint256) {
+        return _getMyIndex();
+    }
+
     function _getMyIndex() private view returns (uint256) {
         uint256 _iterationData = iterationData;
         uint256 _firstAssignable = uint256(uint64(_iterationData));
         uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
 
-        for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i)) {
-            if (address(uint160(drawings_info[i])) == msg.sender)
+        for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i))
+            if (address(uint160(drawings_info[i])) == msg.sender && _isEmptyDrawingStorage(i))
                 return i;
-        }
         return 0; // TODO throw error or something
     }
 
