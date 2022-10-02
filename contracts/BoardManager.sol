@@ -58,11 +58,6 @@ contract BoardManager {
         return (drawing, neighbors);
     }
 
-    //TODO draw must fail if no place for me
-    //TODO draw may let you draw even tho you are expired
-    //TODO draw will not let you draw if expired and another one took my place
-    //TODO once you draw, you lose your spot
-
     function draw(uint256[CHUNK_AMOUNT] calldata drawing) public {
         require(status == Status.Started, ERROR_NOT_STARTED);
         require(!_isEmptyDrawing(drawing), "Drawing shouldn't be empty");
@@ -143,8 +138,9 @@ contract BoardManager {
         uint256 info = drawings_info[i];
         address owner = address(uint160(info));
         if (owner == address(0x0)) return true;
+        if (!_isEmptyDrawingStorage(i)) return false;
         uint256 timestamp = uint256(uint40(info>>160));
-        return _hasExpired(timestamp) && _isEmptyDrawingStorage(i);
+        return _hasExpired(timestamp) || msg.sender == owner;
     }
 
     function _hasExpired(uint256 timestamp) private view returns (bool) {

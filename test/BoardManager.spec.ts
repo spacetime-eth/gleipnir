@@ -141,6 +141,29 @@ describe("BoardManager", () => {
 				await expect(await get_canvas_index_for_signer(0)).to.equal(1)
 			})
 
+			it("reassigns same space if expired", async () => {
+				await reserve_canvas_for_signer(1)
+
+				await ethers.provider.send("evm_increaseTime", [1801])
+
+				await reserve_canvas_for_signer(0)
+				await expect(await get_canvas_index_for_signer(0)).to.equal(1)
+			})
+
+			it("reassigns same space resets timer even when not expired", async () => {
+				await reserve_canvas_for_signer(0)
+
+				await ethers.provider.send("evm_increaseTime", [1000])
+
+				await reserve_canvas_for_signer(0)
+
+				await ethers.provider.send("evm_increaseTime", [1000])
+
+				//skips one because it is not expired now
+				await reserve_canvas_for_signer(1)
+				await expect(await get_canvas_index_for_signer(1)).to.equal(2)
+			})
+
 			it("skips if other is drawing", async () => {
 				await reserve_canvas_for_signer(1)
 
@@ -189,11 +212,12 @@ describe("BoardManager", () => {
 			}
 		})
 
+    //TODO draw must fail if no place for me
+    //TODO draw may let you draw even tho you are expired
+    //TODO draw will not let you draw if expired and another one took my place
+    //TODO once you draw, you lose your spot
 
-		//todo reserve may assign an expired place
-
-		//todo cannot reserve canvas twice (or can we?)
-		//todo re-reserve extends lifetime?
+    //TODO no new unlocks from non minimums
 	})
 })
 
