@@ -23,6 +23,7 @@
   },
   "scripts": {
     "test": "hardhat test",
-    "pretest": "hardhat typechain"
+    "pretest": "hardhat typechain",
+    "deploy": "hardhat run scripts/deploy.ts"
   }
 }
