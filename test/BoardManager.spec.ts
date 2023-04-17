@@ -136,14 +136,14 @@ describe("BoardManager", () => {
 				await expect(await manager.getMyCanvasIndex()).to.equal(1)
 			})
 
-			it("reassigns same space if same signer", async () => {
+			it("reserves same space if same signer", async () => {
 				await reserve_canvas_for_signer(0)
 
 				await reserve_canvas_for_signer(0)
 				await expect(await get_canvas_index_for_signer(0)).to.equal(1)
 			})
 
-			it("reassigns same space if expired", async () => {
+			it("reserves same space if expired", async () => {
 				await reserve_canvas_for_signer(1)
 
 				await ethers.provider.send("evm_increaseTime", [1801])
@@ -152,7 +152,7 @@ describe("BoardManager", () => {
 				await expect(await get_canvas_index_for_signer(0)).to.equal(1)
 			})
 
-			it("reassigns same space resets timer even when not expired", async () => {
+			it("reserves same space resets timer even when not expired", async () => {
 				await reserve_canvas_for_signer(0)
 
 				await ethers.provider.send("evm_increaseTime", [1000])
