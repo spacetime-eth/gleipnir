@@ -268,7 +268,7 @@ describe("BoardManager", () => {
 const toBigNumberResponse = (value: number) => BigNumber.from(value)
 
 
-const CHUNK_AMOUNT = 16
+const CHUNK_AMOUNT = 1
 const EMPTY_CANVAS: any = Array(CHUNK_AMOUNT).fill(0n)
 const EMPTY_CANVAS_RESPONSE: any = EMPTY_CANVAS.map(toBigNumberResponse)
 const DRAWING_A_REQUEST: any = Array.from(Array(CHUNK_AMOUNT), (_, i) => i + 1)

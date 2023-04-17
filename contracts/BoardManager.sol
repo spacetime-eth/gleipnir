@@ -13,7 +13,7 @@ contract BoardManager {
     string constant ERROR_MAX_CONCURRENCY = "Max concurrency reached";
     string constant ERROR_NOT_RESERVED = "Need to reserve first";
 
-    uint256 constant CHUNK_AMOUNT = 16;
+    uint256 constant CHUNK_AMOUNT = 1;
     mapping(uint => uint256) drawings_info;
     mapping(uint => uint256[CHUNK_AMOUNT]) drawings_images;
     uint256 iterationData;
