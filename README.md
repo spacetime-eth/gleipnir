@@ -12,3 +12,10 @@ GAS_REPORT=true npx hardhat test
 npx hardhat node
 npx hardhat run scripts/deploy.ts
 ```
+
+- run ganache
+- npx hardhat run scripts/deploy.ts --network ganache
+- yarn dev (front end)
+- Add network on Metamask
+- Connect with account from Ganache on Metamask
+- On .env.local add CONTRACT_ADDRESS from Ganache

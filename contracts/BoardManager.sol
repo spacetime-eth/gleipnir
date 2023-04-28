@@ -4,11 +4,9 @@ import "hardhat/console.sol";
 
 contract BoardManager {
     enum Status {
-        Idle,
         Started,
         Finished
     }
-    string constant ERROR_NOT_IDLE = "Board must be idle";
     string constant ERROR_NOT_STARTED = "Board must be started";
     string constant ERROR_MAX_CONCURRENCY = "Max concurrency reached";
     string constant ERROR_NOT_RESERVED = "Need to reserve first";
@@ -19,13 +17,7 @@ contract BoardManager {
     uint256 iterationData;
     uint256 constant EXPIRATION_TIME = 1800; //TODO determine time limit
 
-    Status status = Status.Idle;
-
-    function start() public {
-        require(status == Status.Idle, ERROR_NOT_IDLE);
-        status = Status.Started;
-    }
-
+    Status status = Status.Started;
 
     function reserveCanvas() public {
         require(status == Status.Started, ERROR_NOT_STARTED);

@@ -58,29 +58,7 @@ describe("BoardManager", () => {
 		manager = (await loadFixture(deployBoardManager)).manager
 	})
 
-	describe("board is idle", () => {
-		it("fails to get canvas", async () => {
-			await expect(manager.getMyCanvas()).to.be.revertedWith(ERROR_NOT_STARTED)
-		})
-
-		it("fails to draw", async () => {
-			await expect(manager.draw(DRAWING_A_REQUEST)).to.be.revertedWith(ERROR_NOT_STARTED)
-		})
-
-		it("fails to reserve canvas", async () => {
-			await expect(manager.reserveCanvas()).to.be.revertedWith(ERROR_NOT_STARTED)
-		})
-	})
-
 	describe("board is started", () => {
-		beforeEach(async () => {
-			await manager.start()
-		})
-
-		it("fails to start already started board", async () => {
-			await expect(manager.start()).to.be.revertedWith(ERROR_NOT_IDLE)
-		})
-
 		it("returns canvas", async () => {
 			await manager.reserveCanvas()
 			const result = await manager.getMyCanvas()
@@ -287,6 +265,5 @@ function drawingPropertyToIndexes(value: Neighbors) {
 }
 
 const ERROR_NOT_STARTED = "Board must be started"
-const ERROR_NOT_IDLE = "Board must be idle"
 const ERROR_MAX_CONCURRENCY = "Max concurrency reached"
 const ERROR_NOT_RESERVED = "Need to reserve first"
