@@ -11,9 +11,8 @@ contract BoardManager {
     string constant ERROR_MAX_CONCURRENCY = "Max concurrency reached";
     string constant ERROR_NOT_RESERVED = "Need to reserve first";
 
-    uint256 constant CHUNK_AMOUNT = 1;
     mapping(uint => uint256) drawings_info;
-    mapping(uint => uint256[CHUNK_AMOUNT]) drawings_images;
+    mapping(uint => uint256) drawings_images;
     uint256 iterationData;
     uint256 constant EXPIRATION_TIME = 1800; //TODO determine time limit
 
@@ -37,21 +36,17 @@ contract BoardManager {
         revert(ERROR_MAX_CONCURRENCY);
     }
 
-    function getMyCanvas() view public returns (uint256[CHUNK_AMOUNT][4] memory) {
+    function getMyCanvas() view public returns (uint256[4] memory) {
         require(status == Status.Started, ERROR_NOT_STARTED);
         uint256 currentIndex = _getMyIndex();
-        (uint256[CHUNK_AMOUNT] memory me, uint256[CHUNK_AMOUNT][4] memory neighbors) = getCanvas(currentIndex);
-        return neighbors;
+        return _getNeighbors(currentIndex);
     }
 
-    function getCanvas(uint256 index) view public returns (uint256[CHUNK_AMOUNT] memory, uint256[CHUNK_AMOUNT][4] memory) {
-        uint256[CHUNK_AMOUNT] memory drawing = drawings_images[index];
-        uint256[CHUNK_AMOUNT][4] memory neighbors = _getNeighbors(index);
-
-        return (drawing, neighbors);
+    function getCanvas(uint256 index) view public returns (uint256) {
+        return drawings_images[index];
     }
 
-    function draw(uint256[CHUNK_AMOUNT] calldata drawing) public {
+    function draw(uint256 drawing) public {
         require(status == Status.Started, ERROR_NOT_STARTED);
         require(!_isEmptyDrawing(drawing), "Drawing shouldn't be empty");
 
@@ -140,19 +135,16 @@ contract BoardManager {
         return timestamp + EXPIRATION_TIME < block.timestamp;
     }
 
-    function _isEmptyDrawing(uint256[CHUNK_AMOUNT] calldata drawing) private pure returns (bool) {
-        for (uint i = 0; i < CHUNK_AMOUNT; i = unchecked_inc(i))
-            if (drawing[i] == 0)
-                return true;
-        return false;
+    function _isEmptyDrawing(uint256 drawing) private pure returns (bool) {
+        return drawing == 0;
     }
 
     function _isEmptyDrawingStorage(uint256 index) private view returns (bool) {
-        return drawings_images[index][0] == 0;
+        return drawings_images[index] == 0;
     }
 
-    function _getNeighbors(uint256 index) private view returns (uint256[CHUNK_AMOUNT][4] memory) {
-        uint256[CHUNK_AMOUNT][4] memory result;
+    function _getNeighbors(uint256 index) private view returns (uint256[4] memory) {
+        uint256[4] memory result;
         if (index == 0) return result;
         uint256 ringIndex = index;
 
@@ -170,7 +162,7 @@ contract BoardManager {
 
         uint256 side = ringIndex < threshold_1 ? 0 : ringIndex < threshold_2 ? 1 : ringIndex < threshold_3 ? 2 : 3;
 
-        // ring 1 is a special case for some reason
+        // ring 1 is a special case
         uint256 primaryValue = index - side - (ring == 1 ? 1 : (ring - 1) * 4);
 
         uint256 magic = (side + 2) % 4;

@@ -81,7 +81,6 @@ describe("BoardManager", () => {
 				expect(board).to.deep.equal(
 					drawingPropertyToIndexes(expectation.neighbors)
 				)
-				//console.log("all good for", expectation.value)
 			}
 		})
 
@@ -246,21 +245,20 @@ describe("BoardManager", () => {
 const toBigNumberResponse = (value: number) => BigNumber.from(value)
 
 
-const CHUNK_AMOUNT = 1
-const EMPTY_CANVAS: any = Array(CHUNK_AMOUNT).fill(0n)
-const EMPTY_CANVAS_RESPONSE: any = EMPTY_CANVAS.map(toBigNumberResponse)
-const DRAWING_A_REQUEST: any = Array.from(Array(CHUNK_AMOUNT), (_, i) => i + 1)
+const EMPTY_CANVAS: any = 0n
+const EMPTY_CANVAS_RESPONSE: any = toBigNumberResponse(EMPTY_CANVAS)
+const DRAWING_A_REQUEST: any = 1n
 
 function drawingForNumber(value: number) {
-	return Array.from(Array(CHUNK_AMOUNT), (_, i) => i + value + 1)
+	return toBigNumberResponse(value + 1)
 }
 
 function drawingPropertyToIndexes(value: Neighbors) {
-	const result = Array(4).fill(EMPTY_CANVAS.map(toBigNumberResponse))
-	if (value.top !== undefined) result[0] = drawingForNumber(value.top).map(toBigNumberResponse)
-	if (value.right !== undefined) result[1] = drawingForNumber(value.right).map(toBigNumberResponse)
-	if (value.bottom !== undefined) result[2] = drawingForNumber(value.bottom).map(toBigNumberResponse)
-	if (value.left !== undefined) result[3] = drawingForNumber(value.left).map(toBigNumberResponse)
+	const result = Array(4).fill(EMPTY_CANVAS_RESPONSE)
+	if (value.top !== undefined) result[0] = drawingForNumber(value.top)
+	if (value.right !== undefined) result[1] = drawingForNumber(value.right)
+	if (value.bottom !== undefined) result[2] = drawingForNumber(value.bottom)
+	if (value.left !== undefined) result[3] = drawingForNumber(value.left)
 	return result
 }
 
