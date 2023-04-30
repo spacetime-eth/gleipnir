@@ -11,16 +11,16 @@ contract BoardManager {
     string constant ERROR_MAX_CONCURRENCY = "Max concurrency reached";
     string constant ERROR_NOT_RESERVED = "Need to reserve first";
 
-    mapping(uint => uint256) drawings_info;
-    mapping(uint => uint256) drawings_images;
-    uint256 iterationData;
+    mapping(uint => uint256) canvases_info;
+    mapping(uint => uint256) canvases;
+    uint256 iteration_data;
     uint256 constant EXPIRATION_TIME = 1800; //TODO determine time limit
 
     Status status = Status.Started;
 
     function reserveCanvas() public {
         require(status == Status.Started, ERROR_NOT_STARTED);
-        uint256 _iterationData = iterationData;
+        uint256 _iterationData = iteration_data;
         uint256 _firstAssignable = uint256(uint64(_iterationData));
         uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
 
@@ -28,7 +28,7 @@ contract BoardManager {
             if (_isAssignable(i)) {
                 uint256 info = uint256(uint160(msg.sender));
                 info |= block.timestamp<<160;
-                drawings_info[i] = info;
+                canvases_info[i] = info;
                 return;
             }
         }
@@ -43,23 +43,23 @@ contract BoardManager {
     }
 
     function getCanvas(uint256 index) view public returns (uint256) {
-        return drawings_images[index];
+        return canvases[index];
     }
 
     function draw(uint256 drawing) public {
         require(status == Status.Started, ERROR_NOT_STARTED);
-        require(!_isEmptyDrawing(drawing), "Drawing shouldn't be empty");
+        require(drawing != 0, "Drawing shouldn't be empty");
 
         uint256 i = getMyCanvasIndex();
-        drawings_images[i] = drawing;
-        uint256 _iterationData = iterationData;
+        canvases[i] = drawing;
+        uint256 _iterationData = iteration_data;
         if (_iterationData == 0) {
             // Handle first drawing special case
             _iterationData = 1;       //first
             _iterationData |= 4<<64;  //last
             _iterationData |= 1<<128; //ring
             _iterationData |= 4<<192; //breakpoint
-            iterationData = _iterationData;
+            iteration_data = _iterationData;
             return;
         }
 
@@ -95,7 +95,7 @@ contract BoardManager {
             _iterationData |= _lastAssignable<<64;
             _iterationData |= _ring<<128;
             _iterationData |= _breakpoint<<192;
-            iterationData = _iterationData;
+            iteration_data = _iterationData;
         }
     }
 
@@ -109,12 +109,12 @@ contract BoardManager {
     }
 
     function _getMyIndex() private view returns (uint256) {
-        uint256 _iterationData = iterationData;
+        uint256 _iterationData = iteration_data;
         uint256 _firstAssignable = uint256(uint64(_iterationData));
         uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
 
         for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i))
-            if (address(uint160(drawings_info[i])) == msg.sender && _isEmptyDrawingStorage(i))
+            if (address(uint160(canvases_info[i])) == msg.sender && _isEmptyDrawingStorage(i))
                 return i;
         revert(ERROR_NOT_RESERVED);
     }
@@ -122,7 +122,7 @@ contract BoardManager {
     function unchecked_inc(uint256 i) private pure returns(uint256) { unchecked { return i + 1; } }
 
     function _isAssignable(uint256 i) private view returns (bool) {
-        uint256 info = drawings_info[i];
+        uint256 info = canvases_info[i];
         address owner = address(uint160(info));
         if (owner == address(0x0)) return true;
         if (!_isEmptyDrawingStorage(i)) return false;
@@ -139,7 +139,7 @@ contract BoardManager {
     }
 
     function _isEmptyDrawingStorage(uint256 index) private view returns (bool) {
-        return drawings_images[index] == 0;
+        return canvases[index] == 0;
     }
 
     function _getNeighbors(uint256 index) private view returns (uint256[4] memory) {
@@ -167,11 +167,11 @@ contract BoardManager {
         uint256 magic = (side + 2) % 4;
 
         if (lineIndex == 0)
-            result[magic] = drawings_images[primaryValue];
+            result[magic] = canvases[primaryValue];
         else {
             bool isLastRingIndex = ringIndex == (ring * 4) - 1;
-            result[(magic + 1) % 4] = drawings_images[primaryValue - 1];
-            result[magic] = drawings_images[primaryValue - (isLastRingIndex ? (ring - 1) * 4 : 0)];
+            result[(magic + 1) % 4] = canvases[primaryValue - 1];
+            result[magic] = canvases[primaryValue - (isLastRingIndex ? (ring - 1) * 4 : 0)];
         }
 
         return result;
