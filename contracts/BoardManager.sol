@@ -36,9 +36,9 @@ contract BoardManager {
         revert(ERROR_MAX_CONCURRENCY);
     }
 
-    function getMyCanvas() view public returns (uint256[4] memory) {
+    function getMyNeighbors() view public returns (uint256[4] memory) {
         require(status == Status.Started, ERROR_NOT_STARTED);
-        uint256 currentIndex = _getMyIndex();
+        uint256 currentIndex = getMyCanvasIndex();
         return _getNeighbors(currentIndex);
     }
 
@@ -50,7 +50,7 @@ contract BoardManager {
         require(status == Status.Started, ERROR_NOT_STARTED);
         require(!_isEmptyDrawing(drawing), "Drawing shouldn't be empty");
 
-        uint256 i = _getMyIndex();
+        uint256 i = getMyCanvasIndex();
         drawings_images[i] = drawing;
         uint256 _iterationData = iterationData;
         if (_iterationData == 0) {
@@ -104,7 +104,6 @@ contract BoardManager {
         status = Status.Finished;
     }
 
-    //TODO check if should be merged with _getMyIndex, there may be performance shenanigans for public
     function getMyCanvasIndex() public view returns (uint256) {
         return _getMyIndex();
     }

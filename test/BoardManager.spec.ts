@@ -61,7 +61,7 @@ describe("BoardManager", () => {
 	describe("board is started", () => {
 		it("returns canvas", async () => {
 			await manager.reserveCanvas()
-			const result = await manager.getMyCanvas()
+			const result = await manager.getMyNeighbors()
 			expect(result).to.deep.equal([
 				EMPTY_CANVAS_RESPONSE,
 				EMPTY_CANVAS_RESPONSE,
@@ -73,10 +73,10 @@ describe("BoardManager", () => {
 		it("draws", async () => {
 			for (const expectation of drawExpectations) {
 				const reserveResponse = await manager.reserveCanvas()
-				//console.log("reserve gas", (await reserveResponse.wait()).gasUsed)
-				let board = await manager.getMyCanvas()
+				console.log("reserve gas", (await reserveResponse.wait()).gasUsed)
+				let board = await manager.getMyNeighbors()
 				const drawResponse = await manager.draw(drawingForNumber(expectation.value) as any)
-				//console.log("draw gas", (await drawResponse.wait()).gasUsed)
+				console.log("draw gas", (await drawResponse.wait()).gasUsed)
 
 				expect(board).to.deep.equal(
 					drawingPropertyToIndexes(expectation.neighbors)
