@@ -67,22 +67,25 @@ contract BoardManager {
                 // Update first and last assignable
                 unchecked { _firstAssignable += 1; }
                 unchecked { _lastAssignable += 1; }
+
+                uint256 ringSize;
+                unchecked { ringSize = _ring * 4; }
                 uint256 ringIndex;
-                unchecked {ringIndex = _firstAssignable - (_breakpoint - _ring * 4) - 1; }
+                unchecked { ringIndex = _firstAssignable - (_breakpoint - ringSize) - 1; }
 
                 if (ringIndex == _ring ||
                     ringIndex == _ring * 2 ||
                     ringIndex == _ring * 3) {
                     unchecked { _lastAssignable += 1; }
                 }
-                if (ringIndex == _ring * 4 - 1) {
+                if (ringIndex == ringSize - 1) {
                     unchecked { _lastAssignable += 1; }
                 }
 
                 if (_firstAssignable > _breakpoint) {
                     // update current ring
                     unchecked { _ring += 1; }
-                    unchecked { _breakpoint += _ring * 4; }
+                    unchecked { _breakpoint += ringSize; }
                 }
             } while (!_isEmptyDrawingStorage(_firstAssignable));
 
