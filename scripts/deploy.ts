@@ -1,10 +1,11 @@
+import {BigNumber} from "ethers"
 import { ethers } from "hardhat";
 
 async function main() {
 	const BoardManager = await ethers.getContractFactory("BoardManager")
 
 	console.log("Deploying... ")
-	const contract = await BoardManager.deploy()
+	const contract = await BoardManager.deploy(BigNumber.from(255n))
 	await contract.deployed()
 	console.log(`Deployed to ${contract.address}`)
 }
