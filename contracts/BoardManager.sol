@@ -125,10 +125,10 @@ contract BoardManager {
 
     function _isAssignable(uint256 i) private view returns (bool) {
         uint256 info = canvases_info[i];
-        address owner = address(uint160(info));
-        if (owner == address(0x0)) return true;
+        if (info == 0) return true;
         if (!_isEmptyDrawingStorage(i)) return false;
         uint256 timestamp = uint256(uint40(info>>160));
+        address owner = address(uint160(info));
         return _hasExpired(timestamp) || msg.sender == owner;
     }
 
