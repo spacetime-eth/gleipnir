@@ -11,8 +11,8 @@ contract BoardManager {
     string constant ERROR_MAX_CONCURRENCY = "Max concurrency reached";
     string constant ERROR_NOT_RESERVED = "Need to reserve first";
 
-    mapping(uint => uint256) drawings_info;
-    mapping(uint => uint256) drawings_images;
+    mapping(uint => uint256) canvases_info;
+    mapping(uint => uint256) canvases;
     uint256 iteration_data;
     uint256 constant EXPIRATION_TIME = 1800; //TODO determine time limit
 
@@ -28,7 +28,7 @@ contract BoardManager {
             if (_isAssignable(i)) {
                 uint256 info = uint256(uint160(msg.sender));
                 info |= block.timestamp<<160;
-                drawings_info[i] = info;
+                canvases_info[i] = info;
                 return;
             }
         }
@@ -43,7 +43,7 @@ contract BoardManager {
     }
 
     function getCanvas(uint256 index) view public returns (uint256) {
-        return drawings_images[index];
+        return canvases[index];
     }
 
     function draw(uint256 drawing) public {
@@ -51,7 +51,7 @@ contract BoardManager {
         require(drawing != 0, "Drawing shouldn't be empty");
 
         uint256 i = _getMyIndex();
-        drawings_images[i] = drawing;
+        canvases[i] = drawing;
         uint256 _iteration_data = iteration_data;
         if (_iteration_data == 0) {
             // Handle first drawing special case
@@ -114,7 +114,7 @@ contract BoardManager {
         uint256 _lastAssignable = uint256(uint64(_iteration_data>>64));
 
         for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i))
-            if (address(uint160(drawings_info[i])) == msg.sender && _isEmptyDrawingStorage(i))
+            if (address(uint160(canvases_info[i])) == msg.sender && _isEmptyDrawingStorage(i))
                 return i;
         revert(ERROR_NOT_RESERVED);
     }
@@ -122,7 +122,7 @@ contract BoardManager {
     function unchecked_inc(uint256 i) private pure returns(uint256) { unchecked { return i + 1; } }
 
     function _isAssignable(uint256 i) private view returns (bool) {
-        uint256 info = drawings_info[i];
+        uint256 info = canvases_info[i];
         address owner = address(uint160(info));
         if (owner == address(0x0)) return true;
         if (!_isEmptyDrawingStorage(i)) return false;
@@ -139,7 +139,7 @@ contract BoardManager {
     }
 
     function _isEmptyDrawingStorage(uint256 index) private view returns (bool) {
-        return drawings_images[index] == 0;
+        return canvases[index] == 0;
     }
 
     function _getNeighbors(uint256 index) private view returns (uint256[4] memory) {
@@ -167,11 +167,11 @@ contract BoardManager {
         uint256 magic = (side + 2) % 4;
 
         if (lineIndex == 0)
-            result[magic] = drawings_images[primaryValue];
+            result[magic] = canvases[primaryValue];
         else {
             bool isLastRingIndex = ringIndex == (ring * 4) - 1;
-            result[(magic + 1) % 4] = drawings_images[primaryValue - 1];
-            result[magic] = drawings_images[primaryValue - (isLastRingIndex ? (ring - 1) * 4 : 0)];
+            result[(magic + 1) % 4] = canvases[primaryValue - 1];
+            result[magic] = canvases[primaryValue - (isLastRingIndex ? (ring - 1) * 4 : 0)];
         }
 
         return result;
