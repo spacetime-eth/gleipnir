@@ -73,11 +73,13 @@ contract BoardManager {
                 uint256 ringIndex;
                 unchecked { ringIndex = _firstAssignable - (_breakpoint - ringSize) - 1; }
 
-                if (ringIndex == _ring ||
-                    ringIndex == _ring * 2 ||
-                    ringIndex == _ring * 3) {
+                if (ringIndex == 0) continue;
+
+                bool turn = ringIndex % _ring == 0;
+                if (turn) {
                     unchecked { _lastAssignable += 1; }
                 }
+
                 if (ringIndex == ringSize - 1) {
                     unchecked { _lastAssignable += 1; }
                 }
