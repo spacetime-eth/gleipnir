@@ -6,7 +6,6 @@ import {ethers} from "hardhat"
 import {BoardManager} from "../typechain-types"
 
 const drawExpectations: Array<{ value: number; neighbors: Neighbors }> = [
-	{value: 0, neighbors: {}},
 	{value: 1, neighbors: {bottom: 0}},
 	{value: 2, neighbors: {left: 0}},
 	{value: 3, neighbors: {top: 0}},
@@ -40,7 +39,7 @@ type Neighbors = Partial<Record<"top" | "right" | "bottom" | "left", number>>;
 describe("BoardManager", () => {
 	async function deployBoardManager() {
 		const BoardManager = await ethers.getContractFactory("BoardManager")
-		const manager = await BoardManager.deploy()
+		const manager = await BoardManager.deploy(drawingForNumber(0))
 		await manager.deployed()
 
 		return {manager}
@@ -59,17 +58,6 @@ describe("BoardManager", () => {
 	})
 
 	describe("board is started", () => {
-		it("returns canvas", async () => {
-			await manager.reserveCanvas()
-			const result = await manager.getMyNeighbors()
-			expect(result).to.deep.equal([
-				EMPTY_CANVAS_RESPONSE,
-				EMPTY_CANVAS_RESPONSE,
-				EMPTY_CANVAS_RESPONSE,
-				EMPTY_CANVAS_RESPONSE
-			])
-		})
-
 		it("draws", async () => {
 			for (const expectation of drawExpectations) {
 				const reserveResponse = await manager.reserveCanvas()
@@ -102,11 +90,6 @@ describe("BoardManager", () => {
 		})
 
 		describe("first assignable is at the start of first ring", async () => {
-			beforeEach(async () => {
-				await manager.reserveCanvas()
-				await manager.draw(DRAWING_A_REQUEST)
-			})
-
 			it("assigns first assignable space", async () => {
 				await manager.reserveCanvas()
 

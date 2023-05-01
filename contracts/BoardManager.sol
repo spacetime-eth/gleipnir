@@ -14,9 +14,15 @@ contract BoardManager {
     mapping(uint => uint256) canvases_info;
     mapping(uint => uint256) canvases;
     uint256 iteration_data;
-    uint256 constant EXPIRATION_TIME = 1800; //TODO determine time limit
+    uint256 constant EXPIRATION_TIME = 1800;
 
     Status status = Status.Started;
+
+    constructor(uint256 seed) {
+        _setCanvasInfo(0);
+        _setIterationData(1, 4, 1, 4);
+        canvases[0] = seed;
+    }
 
     function reserveCanvas() public {
         require(status == Status.Started, ERROR_NOT_STARTED);
@@ -26,9 +32,7 @@ contract BoardManager {
 
         for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i)) {
             if (_isAssignable(i)) {
-                uint256 info = uint256(uint160(msg.sender));
-                info |= block.timestamp<<160;
-                canvases_info[i] = info;
+                _setCanvasInfo(i);
                 return;
             }
         }
@@ -52,14 +56,8 @@ contract BoardManager {
 
         uint256 i = _getMyIndex();
         canvases[i] = drawing;
-        uint256 _iteration_data = iteration_data;
-        if (_iteration_data == 0) {
-            // Handle first drawing special case
-            iteration_data = _iteration_data;
-            _setIterationData(1, 4, 1, 4);
-            return;
-        }
 
+        uint256 _iteration_data = iteration_data;
         uint256 _firstAssignable = uint256(uint64(_iteration_data));
         if (i == _firstAssignable) {
             uint256 _lastAssignable = uint256(uint64(_iteration_data>>64));
@@ -99,6 +97,10 @@ contract BoardManager {
 
     function getMyCanvasIndex() public view returns (uint256) {
         return _getMyIndex();
+    }
+
+    function _setCanvasInfo(uint256 i) private {
+        canvases_info[i] = uint256(uint160(msg.sender)) | block.timestamp<<160;
     }
 
     function _setIterationData(uint256 first, uint256 last, uint256 ring, uint256 breakpoint) private {
