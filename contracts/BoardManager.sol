@@ -55,11 +55,8 @@ contract BoardManager {
         uint256 _iteration_data = iteration_data;
         if (_iteration_data == 0) {
             // Handle first drawing special case
-            _iteration_data = 1;       //first
-            _iteration_data |= 4<<64;  //last
-            _iteration_data |= 1<<128; //ring
-            _iteration_data |= 4<<192; //breakpoint
             iteration_data = _iteration_data;
+            _setIterationData(1, 4, 1, 4);
             return;
         }
 
@@ -91,11 +88,7 @@ contract BoardManager {
                 }
             } while (!_isEmptyDrawingStorage(_firstAssignable));
 
-            _iteration_data = _firstAssignable;
-            _iteration_data |= _lastAssignable<<64;
-            _iteration_data |= _ring<<128;
-            _iteration_data |= _breakpoint<<192;
-            iteration_data = _iteration_data;
+            _setIterationData(_firstAssignable, _lastAssignable, _ring, _breakpoint);
         }
     }
 
@@ -108,6 +101,10 @@ contract BoardManager {
         return _getMyIndex();
     }
 
+    function _setIterationData(uint256 first, uint256 last, uint256 ring, uint256 breakpoint) private {
+        iteration_data = first | last<<64 | ring<<128 | breakpoint<<192;
+    }
+
     function _getMyIndex() private view returns (uint256) {
         uint256 _iteration_data = iteration_data;
         uint256 _firstAssignable = uint256(uint64(_iteration_data));
@@ -118,8 +115,6 @@ contract BoardManager {
                 return i;
         revert(ERROR_NOT_RESERVED);
     }
-
-    function unchecked_inc(uint256 i) private pure returns(uint256) { unchecked { return i + 1; } }
 
     function _isAssignable(uint256 i) private view returns (bool) {
         uint256 info = canvases_info[i];
@@ -176,4 +171,6 @@ contract BoardManager {
 
         return result;
     }
+
+    function unchecked_inc(uint256 i) private pure returns(uint256) { unchecked { return i + 1; } }
 }
