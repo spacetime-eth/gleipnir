@@ -13,16 +13,16 @@ contract BoardManager {
 
     mapping(uint => uint256) drawings_info;
     mapping(uint => uint256) drawings_images;
-    uint256 iterationData;
+    uint256 iteration_data;
     uint256 constant EXPIRATION_TIME = 1800; //TODO determine time limit
 
     Status status = Status.Started;
 
     function reserveCanvas() public {
         require(status == Status.Started, ERROR_NOT_STARTED);
-        uint256 _iterationData = iterationData;
-        uint256 _firstAssignable = uint256(uint64(_iterationData));
-        uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
+        uint256 _iteration_data = iteration_data;
+        uint256 _firstAssignable = uint256(uint64(_iteration_data));
+        uint256 _lastAssignable = uint256(uint64(_iteration_data>>64));
 
         for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i)) {
             if (_isAssignable(i)) {
@@ -52,22 +52,22 @@ contract BoardManager {
 
         uint256 i = _getMyIndex();
         drawings_images[i] = drawing;
-        uint256 _iterationData = iterationData;
-        if (_iterationData == 0) {
+        uint256 _iteration_data = iteration_data;
+        if (_iteration_data == 0) {
             // Handle first drawing special case
-            _iterationData = 1;       //first
-            _iterationData |= 4<<64;  //last
-            _iterationData |= 1<<128; //ring
-            _iterationData |= 4<<192; //breakpoint
-            iterationData = _iterationData;
+            _iteration_data = 1;       //first
+            _iteration_data |= 4<<64;  //last
+            _iteration_data |= 1<<128; //ring
+            _iteration_data |= 4<<192; //breakpoint
+            iteration_data = _iteration_data;
             return;
         }
 
-        uint256 _firstAssignable = uint256(uint64(_iterationData));
+        uint256 _firstAssignable = uint256(uint64(_iteration_data));
         if (i == _firstAssignable) {
-            uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
-            uint256 _ring = uint256(uint64(_iterationData>>128));
-            uint256 _breakpoint = uint256(uint64(_iterationData>>192));
+            uint256 _lastAssignable = uint256(uint64(_iteration_data>>64));
+            uint256 _ring = uint256(uint64(_iteration_data>>128));
+            uint256 _breakpoint = uint256(uint64(_iteration_data>>192));
             do {
                 // Update first and last assignable
                 unchecked { _firstAssignable += 1; }
@@ -91,11 +91,11 @@ contract BoardManager {
                 }
             } while (!_isEmptyDrawingStorage(_firstAssignable));
 
-            _iterationData = _firstAssignable;
-            _iterationData |= _lastAssignable<<64;
-            _iterationData |= _ring<<128;
-            _iterationData |= _breakpoint<<192;
-            iterationData = _iterationData;
+            _iteration_data = _firstAssignable;
+            _iteration_data |= _lastAssignable<<64;
+            _iteration_data |= _ring<<128;
+            _iteration_data |= _breakpoint<<192;
+            iteration_data = _iteration_data;
         }
     }
 
@@ -109,9 +109,9 @@ contract BoardManager {
     }
 
     function _getMyIndex() private view returns (uint256) {
-        uint256 _iterationData = iterationData;
-        uint256 _firstAssignable = uint256(uint64(_iterationData));
-        uint256 _lastAssignable = uint256(uint64(_iterationData>>64));
+        uint256 _iteration_data = iteration_data;
+        uint256 _firstAssignable = uint256(uint64(_iteration_data));
+        uint256 _lastAssignable = uint256(uint64(_iteration_data>>64));
 
         for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i))
             if (address(uint160(drawings_info[i])) == msg.sender && _isEmptyDrawingStorage(i))
