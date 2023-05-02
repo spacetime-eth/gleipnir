@@ -65,7 +65,7 @@ describe("BoardManager", () => {
 				const board = await manager.getMyNeighbors()
 				const drawResponse = await manager.draw(drawingForNumber(expectation.value) as any)
 				const drawGas = (await drawResponse.wait()).gasUsed._hex
-				console.log("reserve", BigInt(reserveGas),  "draw", BigInt(drawGas))
+				console.log("reserve", BigInt(reserveGas), "draw", BigInt(drawGas))
 
 				expect(board).to.deep.equal(
 					drawingPropertyToIndexes(expectation.neighbors)
@@ -210,20 +210,60 @@ describe("BoardManager", () => {
 				//This is a really sad use case. In practice, it is unlikely once it gains traction.
 				await expect(reserve_canvas_for_signer(0)).to.be.revertedWith(ERROR_MAX_CONCURRENCY)
 			})
+		})
 
-			async function reserve_canvas_for_signer(index: number) {
-				return await manager.connect(signers[index]).reserveCanvas()
-			}
+		describe("first assignable is at the start of second ring", async () => {
+			beforeEach(async () => {
+				await reserve_and_draw_canvas(1)
+				await reserve_and_draw_canvas(2)
+				await reserve_and_draw_canvas(3)
+				await reserve_and_draw_canvas(4)
+			})
 
-			async function get_canvas_index_for_signer(index: number) {
-				return await manager.connect(signers[index]).getMyCanvasIndex()
-			}
+			it("first assignable advances correctly when filling gaps", async () => {
+				await reserve_canvas_for_signer(0)
+				await reserve_and_draw_canvas(6)
+				await reserve_canvas_for_signer(1)
+				await reserve_and_draw_canvas(8)
+				await reserve_and_draw_canvas(9)
 
-			async function draw_canvas_for_signer(index: number) {
-				return await manager.connect(signers[index]).draw(DRAWING_A_REQUEST)
-			}
+				await assert_first_assignable_is_at(5)
+
+				await draw_canvas_for_signer(0)
+				await assert_first_assignable_is_at(7)
+
+				await draw_canvas_for_signer(1)
+				await assert_first_assignable_is_at(10)
+			})
 		})
 	})
+
+	async function reserve_canvas_for_signer(index: number) {
+		return await manager.connect(signers[index]).reserveCanvas()
+	}
+
+	async function get_canvas_index_for_signer(index: number) {
+		return await manager.connect(signers[index]).getMyCanvasIndex()
+	}
+
+	async function draw_canvas_for_signer(index: number) {
+		return await manager.connect(signers[index]).draw(DRAWING_A_REQUEST)
+	}
+
+	async function reserve_and_draw_canvas(index: number) {
+		await reserve_and_draw_canvas_for_signer({canvas: index, signer: 10})
+	}
+
+	async function reserve_and_draw_canvas_for_signer({canvas, signer}: {canvas: number, signer: number}) {
+		await reserve_canvas_for_signer(signer)
+		await expect(await get_canvas_index_for_signer(signer)).to.equal(canvas)
+		await draw_canvas_for_signer(signer)
+	}
+
+	async function assert_first_assignable_is_at(value: number) {
+		const [first] = await manager.connect(signers[0]).getIterationInfo()
+		expect(first).to.equal(value)
+	}
 })
 
 const toBigNumberResponse = (value: number) => BigNumber.from(value)

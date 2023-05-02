@@ -133,6 +133,16 @@ contract BoardManager {
         return canvases[index];
     }
 
+    function getIterationInfo() view public returns (uint256, uint256, uint256, uint256, uint128) {
+        uint256 _iteration_data = iteration_data;
+        uint256 _first = uint256(uint32(_iteration_data));
+        uint256 _last = uint256(uint32(_iteration_data>>32));
+        uint256 _ring = uint256(uint32(_iteration_data>>64));
+        uint256 _breakpoint = uint256(uint32(_iteration_data>>96));
+        uint128 _confirmations = uint128(_iteration_data>>128);
+        return (_first, _last, _ring, _breakpoint, _confirmations);
+    }
+
     function getMyCanvasIndex() public view returns (uint256) {
         uint256 _iteration_data = iteration_data;
         uint256 _first = uint256(uint32(_iteration_data));
