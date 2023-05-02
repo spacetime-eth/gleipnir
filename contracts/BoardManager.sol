@@ -28,12 +28,22 @@ contract BoardManager {
         require(status == Status.Started, ERROR_NOT_STARTED);
         uint256 _iteration_data = iteration_data;
         uint256 _first = uint256(uint32(_iteration_data));
-        uint256 _last = uint256(uint32(_iteration_data>>32));
 
-        for (uint i = _first; i <= _last; i = unchecked_inc(i)) {
-            if (_isAssignable(i)) {
-                _setCanvasInfo(i);
-                return;
+        if (_isAssignable(_first)) {
+            _setCanvasInfo(_first);
+            return;
+        }
+
+        uint256 _last = uint256(uint32(_iteration_data>>32));
+        uint128 _confirmations = uint128(_iteration_data>>128);
+
+        for (uint i = _first + 1; i <= _last; i = unchecked_inc(i)) {
+            uint128 mask = uint128(1<<i - _first - 1);
+            if (_confirmations & mask == 0) {
+                if (_isAssignable(i)) {
+                    _setCanvasInfo(i);
+                    return;
+                }
             }
         }
 
@@ -150,7 +160,6 @@ contract BoardManager {
     function _isAssignable(uint256 i) private view returns (bool) {
         uint256 info = canvases_info[i];
         if (info == 0) return true;
-        if (!_isEmptyDrawingStorage(i)) return false;
         uint256 timestamp = uint256(uint40(info>>160));
         address owner = address(uint160(info));
         return _hasExpired(timestamp) || msg.sender == owner;
@@ -162,10 +171,6 @@ contract BoardManager {
 
     function _isEmptyDrawing(uint256 drawing) private pure returns (bool) {
         return drawing == 0;
-    }
-
-    function _isEmptyDrawingStorage(uint256 index) private view returns (bool) {
-        return canvases[index] == 0;
     }
 
     function _getNeighbors(uint256 index) private view returns (uint256[4] memory) {
