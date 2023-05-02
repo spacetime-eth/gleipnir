@@ -20,17 +20,17 @@ contract BoardManager {
 
     constructor(uint256 seed) {
         _setCanvasInfo(0);
-        _setIterationData(1, 4, 1, 4);
+        _setIterationData(1, 4, 1, 4, 0);
         canvases[0] = seed;
     }
 
     function reserveCanvas() public {
         require(status == Status.Started, ERROR_NOT_STARTED);
         uint256 _iteration_data = iteration_data;
-        uint256 _firstAssignable = uint256(uint64(_iteration_data));
-        uint256 _lastAssignable = uint256(uint64(_iteration_data>>64));
+        uint256 _first = uint256(uint32(_iteration_data));
+        uint256 _last = uint256(uint32(_iteration_data>>32));
 
-        for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i)) {
+        for (uint i = _first; i <= _last; i = unchecked_inc(i)) {
             if (_isAssignable(i)) {
                 _setCanvasInfo(i);
                 return;
@@ -54,45 +54,68 @@ contract BoardManager {
         require(status == Status.Started, ERROR_NOT_STARTED);
         require(drawing != 0, "Drawing shouldn't be empty");
 
-        uint256 i = _getMyIndex();
-        canvases[i] = drawing;
-
         uint256 _iteration_data = iteration_data;
-        uint256 _firstAssignable = uint256(uint64(_iteration_data));
-        if (i == _firstAssignable) {
-            uint256 _lastAssignable = uint256(uint64(_iteration_data>>64));
-            uint256 _ring = uint256(uint64(_iteration_data>>128));
-            uint256 _breakpoint = uint256(uint64(_iteration_data>>192));
+        uint256 _first = uint256(uint32(_iteration_data));
+        uint256 _last = uint256(uint32(_iteration_data>>32));
+        uint256 _ring = uint256(uint32(_iteration_data>>64));
+        uint256 _breakpoint = uint256(uint32(_iteration_data>>96));
+        uint128 _confirmations = uint128(_iteration_data>>128);
+
+        if (address(uint160(canvases_info[_first])) == msg.sender) {
+            canvases[_first] = drawing;
+            bool _repeat = false;
             do {
                 // Update first and last assignable
-                unchecked { _firstAssignable += 1; }
-                unchecked { _lastAssignable += 1; }
+                unchecked { _first += 1; }
+                unchecked { _last += 1; }
 
                 uint256 ringSize;
                 unchecked { ringSize = _ring * 4; }
                 uint256 ringIndex;
-                unchecked { ringIndex = _firstAssignable - (_breakpoint - ringSize) - 1; }
+                unchecked { ringIndex = _first - (_breakpoint - ringSize) - 1; }
 
                 if (ringIndex == 0) continue;
 
                 bool turn = ringIndex % _ring == 0;
                 if (turn) {
-                    unchecked { _lastAssignable += 1; }
+                    unchecked { _last += 1; }
                 }
 
                 if (ringIndex == ringSize - 1) {
-                    unchecked { _lastAssignable += 1; }
+                    unchecked { _last += 1; }
                 }
 
-                if (_firstAssignable > _breakpoint) {
+                if (_first > _breakpoint) {
                     // update current ring
                     unchecked { _ring += 1; }
                     unchecked { _breakpoint += ringSize; }
                 }
-            } while (!_isEmptyDrawingStorage(_firstAssignable));
 
-            _setIterationData(_firstAssignable, _lastAssignable, _ring, _breakpoint);
+                if (_last - _first >= 128)
+                    _last = _first + 127;
+
+                _repeat = _confirmations % 2 == 1;
+                _confirmations = _confirmations>>1;
+            } while (_repeat);
+
+            _setIterationData(_first, _last, _ring, _breakpoint, _confirmations);
+            return;
         }
+
+        for (uint i = _first + 1; i <= _last; i = unchecked_inc(i)) {
+            if (address(uint160(canvases_info[i])) == msg.sender) {
+                uint256 offset = i - _first - 1;
+                uint128 mask = uint128(1<<offset);
+                if (_confirmations & mask == 0) {
+                    canvases[i] = drawing;
+                    _confirmations = _confirmations | uint128(1<<offset);
+                    _setIterationData(_first, _last, _ring, _breakpoint, _confirmations);
+                    return;
+                }
+            }
+        }
+
+        revert(ERROR_NOT_RESERVED);
     }
 
     function finish() public {
@@ -101,26 +124,27 @@ contract BoardManager {
     }
 
     function getMyCanvasIndex() public view returns (uint256) {
-        return _getMyIndex();
+        uint256 _iteration_data = iteration_data;
+        uint256 _first = uint256(uint32(_iteration_data));
+        uint256 _last = uint256(uint32(_iteration_data>>32));
+        uint256 _confirmations = uint128(_iteration_data>>128);
+
+        if (address(uint160(canvases_info[_first])) == msg.sender) return _first;
+
+        for (uint i = _first + 1; i <= _last; i = unchecked_inc(i))
+            if (address(uint160(canvases_info[i])) == msg.sender) {
+                uint128 mask = uint128(1<<(i - _first - 1));
+                if (_confirmations & mask == 0) return i;
+            }
+        revert(ERROR_NOT_RESERVED);
     }
 
     function _setCanvasInfo(uint256 i) private {
         canvases_info[i] = uint256(uint160(msg.sender)) | block.timestamp<<160;
     }
 
-    function _setIterationData(uint256 first, uint256 last, uint256 ring, uint256 breakpoint) private {
-        iteration_data = first | last<<64 | ring<<128 | breakpoint<<192;
-    }
-
-    function _getMyIndex() private view returns (uint256) {
-        uint256 _iteration_data = iteration_data;
-        uint256 _firstAssignable = uint256(uint64(_iteration_data));
-        uint256 _lastAssignable = uint256(uint64(_iteration_data>>64));
-
-        for (uint i = _firstAssignable; i <= _lastAssignable; i = unchecked_inc(i))
-            if (address(uint160(canvases_info[i])) == msg.sender && _isEmptyDrawingStorage(i))
-                return i;
-        revert(ERROR_NOT_RESERVED);
+    function _setIterationData(uint256 first, uint256 last, uint256 ring, uint256 breakpoint, uint256 forward) private {
+        iteration_data = first | last<<32 | ring<<64 | breakpoint<<96 | forward<<128;
     }
 
     function _isAssignable(uint256 i) private view returns (bool) {
