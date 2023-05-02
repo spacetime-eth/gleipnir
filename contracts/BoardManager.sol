@@ -50,16 +50,6 @@ contract BoardManager {
         revert(ERROR_MAX_CONCURRENCY);
     }
 
-    function getMyNeighbors() view public returns (uint256[4] memory) {
-        require(status == Status.Started, ERROR_NOT_STARTED);
-        uint256 currentIndex = getMyCanvasIndex();
-        return _getNeighbors(currentIndex);
-    }
-
-    function getCanvas(uint256 index) view public returns (uint256) {
-        return canvases[index];
-    }
-
     function draw(uint256 drawing) public {
         require(status == Status.Started, ERROR_NOT_STARTED);
         require(drawing != 0, "Drawing shouldn't be empty");
@@ -131,6 +121,16 @@ contract BoardManager {
     function finish() public {
         require(status == Status.Started, ERROR_NOT_STARTED);
         status = Status.Finished;
+    }
+
+    function getMyNeighbors() view public returns (uint256[4] memory) {
+        require(status == Status.Started, ERROR_NOT_STARTED);
+        uint256 currentIndex = getMyCanvasIndex();
+        return _getNeighbors(currentIndex);
+    }
+
+    function getCanvas(uint256 index) view public returns (uint256) {
+        return canvases[index];
     }
 
     function getMyCanvasIndex() public view returns (uint256) {
